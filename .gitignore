@@ -1,0 +1,149 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+# PyTorch
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+checkpoints/
+experiments/
+wandb/
+outputs/
+lightning_logs/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+.jupyter/
+jupyter_notebook_config.py
+
+# Data files (large datasets)
+data/raw/**
+data/processed/**
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.jpg
+*.jpeg
+*.png
+*.tiff
+*.bmp
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+
+# Model files
+models/checkpoints/**
+models/exports/**
+models/pretrained/**
+!models/checkpoints/.gitkeep
+!models/exports/.gitkeep
+!models/pretrained/.gitkeep
+
+# TensorBoard
+runs/
+logs/
+tensorboard/
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Weights & Biases
+wandb/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+*.env
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pytype
+.pytype/
+
+# Profiling
+*.prof
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.out
+
+# Compressed files (unless explicitly tracked)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ONNX models (if large)
+*.onnx
+
+# Submission artifacts
+submissions/
+
+# Large image directories (dataset)
+organized_images/
+images/
