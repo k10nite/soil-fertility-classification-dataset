@@ -144,6 +144,6 @@ Desktop.ini
 # Submission artifacts
 submissions/
 
-# Large image directories (dataset)
-organized_images/
-images/
+# Large image directories (dataset) - REMOVED, now using Git LFS
+# organized_images/ - Tracked with Git LFS
+# images/
