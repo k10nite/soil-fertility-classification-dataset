@@ -53,11 +53,18 @@ data/raw/**
 data/processed/**
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+
+# Images (excluding organized_images/ which uses Git LFS)
 *.jpg
 *.jpeg
 *.png
 *.tiff
 *.bmp
+!organized_images/**/*.jpg
+!organized_images/**/*.jpeg
+!organized_images/**/*.png
+
+# Other data formats
 *.npy
 *.npz
 *.pkl
