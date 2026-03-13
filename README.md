@@ -9,7 +9,7 @@ A deep learning dataset and training pipeline for automated soil fertility class
 ## Overview
 
 This repository provides:
-- **936 soil images** collected from Benguet municipalities (Atok, La Trinidad)
+- **1,144 soil images** collected from Benguet municipalities (Atok, La Trinidad)
 - **Production-ready data augmentation pipeline** using albumentations
 - **PyTorch Dataset and DataLoader** implementations
 - **Training/validation/test split utilities** with stratification
@@ -34,17 +34,18 @@ A machine learning dataset and pipeline that enables:
 ## Dataset
 
 ### Current Status
-- **Total Images**: 936 soil images (1080x1080px)
-- **Locations**: Atok (239 images) and La Trinidad (697 images) municipalities
+- **Total Images**: 1,144 soil images (1080x1080px and 1920x1080px)
+- **Total Records**: 1,462 data points with metadata
+- **Locations**: Atok and La Trinidad municipalities in Benguet
 - **Format**: Organized by location with comprehensive metadata
 - **Metadata**: GPS coordinates, altitude, temperature, humidity, crops, barangay
 
 ### Dataset Structure
 ```
 organized_images/
-├── Atok/                          # 239 soil images from Atok
-├── Latrinidad/                    # 697 soil images from La Trinidad
-└── combined_field_data.csv        # 1,254 rows with metadata
+├── Atok/                          # Soil images from Atok municipality
+├── Latrinidad/                    # Soil images from La Trinidad municipality
+└── combined_field_data.csv        # 1,462 rows with metadata
 ```
 
 ### Required Labels (In Progress)
@@ -162,7 +163,7 @@ Preserves soil texture and color while providing sufficient variety:
 - Color jitter (brightness=0.2, contrast=0.2, saturation=0.15, hue=0.05)
 - Gaussian blur + Gaussian noise
 
-**Effective dataset size**: ~5,000-7,000 images
+**Effective dataset size**: ~6,000-8,500 images (from 1,144 base images)
 
 ### Aggressive Pipeline
 Maximum variety for limited training data:
@@ -172,7 +173,7 @@ Maximum variety for limited training data:
 - Stronger crops (75-100%)
 - Coarse dropout
 
-**Effective dataset size**: ~10,000-15,000 images
+**Effective dataset size**: ~12,000-17,000 images (from 1,144 base images)
 
 ## Usage
 
@@ -216,9 +217,9 @@ soil-fertility-classification-dataset/
 │   │   └── dataloader.py         # DataLoader utilities
 │   └── example_usage.py          # Complete working example
 ├── organized_images/
-│   ├── Atok/                     # 239 soil images
-│   ├── Latrinidad/               # 697 soil images
-│   └── combined_field_data.csv   # Metadata
+│   ├── Atok/                     # Soil images from Atok
+│   ├── Latrinidad/               # Soil images from La Trinidad
+│   └── combined_field_data.csv   # 1,462 rows of metadata
 ├── .gitignore
 ├── README.md
 └── requirements.txt
@@ -227,9 +228,10 @@ soil-fertility-classification-dataset/
 ## Roadmap
 
 ### Phase 1: Data Collection (Current)
-- [x] Collect 936 soil images from Benguet
+- [x] Collect 1,144 soil images from Benguet (Atok, La Trinidad)
 - [x] Organize images by location
-- [x] Create comprehensive metadata CSV
+- [x] Create comprehensive metadata CSV (1,462 data points)
+- [x] Upload dataset to GitHub with Git LFS
 - [ ] Obtain laboratory NPK and pH analysis
 - [ ] Create labeled dataset with fertility classifications
 
