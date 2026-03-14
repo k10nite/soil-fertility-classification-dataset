@@ -154,3 +154,9 @@ submissions/
 # Large image directories (dataset) - REMOVED, now using Git LFS
 # organized_images/ - Tracked with Git LFS
 # images/
+
+# Old workflow file
+ROBOFLOW_AUGMENTATION_WORKFLOW.docx
+
+# Word temp files
+~.docx
