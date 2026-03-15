@@ -1,0 +1,45 @@
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Output directories
+output_cropped/
+output/
+
+# Model cache
+.u2net/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test_output.png
+
+# Logs
+*.log
+
+# Sample data (user-specific)
+SF-AgriCapture_*/
+BL-AgriCapture_*/
+*-AgriCapture_*/
+*.7z
+
+# Cropped output data (user-specific)
+C-*/
+
+# Claude Code config
+.claude/
