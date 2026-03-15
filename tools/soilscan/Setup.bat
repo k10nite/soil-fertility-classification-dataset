@@ -88,9 +88,17 @@ echo  [+] Export Selected - Create ZIP from selected images
 echo  [+] Export All Edited - Create ZIP from all processed images
 echo  [+] Export tracking - Visual indicators (○ ✓ ⬆)
 echo  [+] Export history log - All exports logged automatically
+echo  [+] Auto Save - Automatically saves when you finish drawing
+echo  [+] Auto Next - Automatically advances to next image
+echo  [+] Keyboard shortcuts - Process images faster!
 echo.
 echo  Status Indicators:
 echo      ○ Pending    ✓ Edited    ⬆ Exported
+echo.
+echo  Keyboard Shortcuts:
+echo      Enter: Apply Lasso    Ctrl+Enter: AI+Lasso
+echo      Space/→: Next         ←: Previous
+echo      Del/Esc: Clear Lasso
 echo.
 echo  ============================================================
 echo.

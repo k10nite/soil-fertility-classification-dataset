@@ -46,6 +46,26 @@ Click on any processed result to edit:
 - **Position Counter** - Shows current image number (X/Y)
 - **Consistent Dimensions** - All outputs maintain original image size
 
+### Workflow Automation
+- **Auto Save** - Automatically saves when you finish drawing a lasso (no need to click "Lasso Only")
+- **Auto Next** - Automatically advances to next image after saving (enabled by default)
+- **Keyboard Shortcuts** - Process images quickly without clicking buttons
+
+### Keyboard Shortcuts
+| Key | Action |
+|-----|--------|
+| **Enter** | Apply lasso selection (Lasso Only) |
+| **Ctrl+Enter** | Apply with AI processing (AI + Lasso) |
+| **Space** or **→** | Next image |
+| **←** | Previous image |
+| **Delete** or **Esc** | Clear current lasso selection |
+
+**Tip:** With Auto Save + Auto Next enabled, you can process images by simply:
+1. Draw lasso around soil
+2. Release mouse (auto-saves)
+3. Image automatically advances to next
+4. Repeat!
+
 ## Workflow
 
 ### Processing New Images (Controlled Environment)
@@ -54,8 +74,16 @@ Click on any processed result to edit:
 2. Click "Open Folder" and select image folder
 3. For each image:
    - Use "AI Full" for automatic processing, OR
-   - Draw lasso + click "AI + Lasso" for selective processing
+   - Draw lasso + click "AI + Lasso" for selective processing, OR
+   - Enable "Auto Save" + "Auto Next", then just draw lassos!
 4. Output saved to C-{folder_name}
+
+# Fast Workflow (with automation)
+1. Enable "Auto Save" and "Auto Next" checkboxes
+2. Draw lasso around soil
+3. Release mouse → auto-saves and advances to next image
+4. Repeat drawing lassos for remaining images
+5. Use Enter key to manually save, or Ctrl+Enter for AI processing
 ```
 
 ### Processing Field Images

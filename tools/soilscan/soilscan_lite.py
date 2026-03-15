@@ -22,7 +22,7 @@ MAX_DISPLAY_SIZE = 500
 class LassoCanvas(tk.Canvas):
     """Freeform lasso selection - draw around the soil with your mouse."""
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, completion_callback=None, **kwargs):
         super().__init__(parent, **kwargs)
         self.configure(bg="#2a2a2a", highlightthickness=1, highlightbackground="#444")
 
@@ -37,6 +37,7 @@ class LassoCanvas(tk.Canvas):
         self.polygon_id = None
         self.selection_polygon = None
         self.selection_bbox = None
+        self.completion_callback = completion_callback
 
         self.bind("<ButtonPress-1>", self._on_press)
         self.bind("<B1-Motion>", self._on_drag)
@@ -137,6 +138,10 @@ class LassoCanvas(tk.Canvas):
 
         flat = [c for p in self.lasso_points for c in p]
         self.polygon_id = self.create_polygon(flat, outline="#00ff00", fill="#00ff00", stipple="gray25", width=2)
+
+        # Call completion callback if set (for auto-save)
+        if self.completion_callback:
+            self.completion_callback()
 
     @property
     def selection(self):
@@ -802,6 +807,8 @@ class SoilScanLite:
         self.use_gpu = True  # Can be toggled
         self.export_tracking = {}  # Track which images have been exported
         self.export_log_file = None  # Path to export log
+        self.auto_advance = tk.BooleanVar(value=True)  # Auto-advance after apply
+        self.auto_save = tk.BooleanVar(value=False)  # Auto-save after drawing lasso
 
         self._build_ui()
         self._load_model()
@@ -886,6 +893,18 @@ class SoilScanLite:
         tk.Label(lh, text="Draw lasso around soil:", bg="#252525", fg="#aaa",
                  font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
 
+        # Auto-save checkbox
+        tk.Checkbutton(lh, text="Auto Save", variable=self.auto_save,
+                       bg="#252525", fg="#ff9800", selectcolor="#252525",
+                       activebackground="#252525", activeforeground="#ff9800",
+                       font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT, padx=10)
+
+        # Auto-advance checkbox
+        tk.Checkbutton(lh, text="Auto Next", variable=self.auto_advance,
+                       bg="#252525", fg="#28a745", selectcolor="#252525",
+                       activebackground="#252525", activeforeground="#28a745",
+                       font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT, padx=10)
+
         # Field mode - for outdoor/field images where AI won't work
         self.field_btn = tk.Button(lh, text="FIELD MODE", command=self._open_field_mode,
                                     bg="#795548", fg="white", relief=tk.FLAT, padx=12,
@@ -908,7 +927,7 @@ class SoilScanLite:
         self.manual_btn.pack(side=tk.RIGHT, padx=5)
 
         # Lasso canvas - fills remaining space (big!)
-        self.lasso_canvas = LassoCanvas(lasso_frame)
+        self.lasso_canvas = LassoCanvas(lasso_frame, completion_callback=self._on_lasso_complete)
         self.lasso_canvas.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Controls bar
@@ -936,6 +955,13 @@ class SoilScanLite:
 
         self.prog_label = tk.Label(ctrl, text="", bg="#252525", fg="white", font=("Segoe UI", 8))
         self.prog_label.pack(side=tk.RIGHT, padx=5)
+
+        # Keyboard shortcuts legend
+        shortcuts_frame = tk.Frame(center, bg="#1a1a1a")
+        shortcuts_frame.pack(fill=tk.X, pady=(0, 2))
+        shortcuts_text = "⌨ Enter: Lasso Only  |  Ctrl+Enter: AI+Lasso  |  Space/→: Next  |  ←: Prev  |  Del/Esc: Clear"
+        tk.Label(shortcuts_frame, text=shortcuts_text, bg="#1a1a1a", fg="#666",
+                 font=("Segoe UI", 7)).pack(pady=2)
 
         # Previews - BOTTOM, smaller
         preview = tk.Frame(center, bg="#1a1a1a", height=200)
@@ -968,6 +994,15 @@ class SoilScanLite:
         # Bind resize to refresh previews
         self._resize_job = None
         self.root.bind("<Configure>", self._on_window_resize)
+
+        # Keyboard shortcuts
+        self.root.bind("<Return>", lambda e: self._apply_manual())
+        self.root.bind("<Control-Return>", lambda e: self._smart_crop())
+        self.root.bind("<Right>", lambda e: self._next())
+        self.root.bind("<Left>", lambda e: self._prev())
+        self.root.bind("<space>", lambda e: self._next())
+        self.root.bind("<Delete>", lambda e: self.lasso_canvas._clear_lasso())
+        self.root.bind("<Escape>", lambda e: self.lasso_canvas._clear_lasso())
 
     def _on_window_resize(self, event):
         """Refresh previews when window is resized."""
@@ -1322,17 +1357,26 @@ class SoilScanLite:
             self._mark_done(self.current_idx)
             self._show()
             self.status.configure(text=f"Zoom edit saved: {out_path.name}")
-            if self.current_idx < len(self.image_files) - 1:
+            # Auto-advance if enabled
+            if self.auto_advance.get() and self.current_idx < len(self.image_files) - 1:
                 self.root.after(200, self._next)
         except Exception as e:
             messagebox.showerror("Error", str(e))
+
+    def _on_lasso_complete(self):
+        """Called when user completes drawing a lasso. Triggers auto-save if enabled."""
+        if self.auto_save.get():
+            # Flash the status to indicate auto-save is happening
+            self.status.configure(text="Auto-saving...", fg="#ff9800")
+            self.root.after(100, self._apply_manual)
 
     def _apply_manual(self):
         if not self.image_files:
             return
         cropped = self.lasso_canvas.get_cropped()
         if not cropped:
-            messagebox.showwarning("No Selection", "Draw a lasso around the soil first!")
+            if not self.auto_save.get():  # Don't show warning for auto-save
+                messagebox.showwarning("No Selection", "Draw a lasso around the soil first!")
             return
 
         img_path = self.image_files[self.current_idx]
@@ -1345,8 +1389,10 @@ class SoilScanLite:
             del cropped; gc.collect()
             self._mark_done(self.current_idx)
             self._show()
-            self.status.configure(text=f"Lasso saved: {out_path.name}")
-            if self.current_idx < len(self.image_files) - 1:
+            mode_text = "Auto-saved" if self.auto_save.get() else "Lasso saved"
+            self.status.configure(text=f"{mode_text}: {out_path.name}", fg="white")
+            # Auto-advance if enabled
+            if self.auto_advance.get() and self.current_idx < len(self.image_files) - 1:
                 self.root.after(200, self._next)
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -1410,7 +1456,8 @@ class SoilScanLite:
         self._mark_done(self.current_idx)
         self._show()
         self.status.configure(text=f"AI + Lasso saved: {fn}")
-        if self.current_idx < len(self.image_files) - 1:
+        # Auto-advance if enabled
+        if self.auto_advance.get() and self.current_idx < len(self.image_files) - 1:
             self.root.after(300, self._next)
 
     def _smart_error(self, e):
