@@ -12,6 +12,9 @@ from PIL import Image, ImageTk, ImageDraw
 import threading
 import os
 import gc
+import json
+import zipfile
+from datetime import datetime
 
 MAX_DISPLAY_SIZE = 500
 
@@ -797,6 +800,8 @@ class SoilScanLite:
         self.session = None
         self.processing = False
         self.use_gpu = True  # Can be toggled
+        self.export_tracking = {}  # Track which images have been exported
+        self.export_log_file = None  # Path to export log
 
         self._build_ui()
         self._load_model()
@@ -835,12 +840,33 @@ class SoilScanLite:
         tk.Label(left, text="Images", bg="#202020", fg="white", font=("Segoe UI", 9, "bold")).pack(pady=5)
 
         self.listbox = tk.Listbox(left, bg="#2a2a2a", fg="white", selectbackground="#0078d4",
-                                   highlightthickness=0, font=("Segoe UI", 8))
+                                   highlightthickness=0, font=("Segoe UI", 8), selectmode=tk.EXTENDED)
         self.listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self.listbox.bind('<<ListboxSelect>>', self._on_select)
 
         self.count_label = tk.Label(left, text="0 images", bg="#202020", fg="#666", font=("Segoe UI", 8))
         self.count_label.pack(pady=2)
+
+        # Status legend
+        legend = tk.Label(left, text="○ Pending  ✓ Edited  ⬆ Exported",
+                         bg="#202020", fg="#888", font=("Segoe UI", 7))
+        legend.pack(pady=(2, 5))
+
+        # Export controls
+        export_frame = tk.Frame(left, bg="#202020")
+        export_frame.pack(fill=tk.X, padx=5, pady=5)
+
+        tk.Button(export_frame, text="Export Selected", command=self._export_selected,
+                  bg="#17a2b8", fg="white", relief=tk.FLAT, font=("Segoe UI", 8, "bold"),
+                  padx=8, pady=4).pack(fill=tk.X, pady=2)
+
+        tk.Button(export_frame, text="Export All Edited", command=self._export_all_edited,
+                  bg="#6c757d", fg="white", relief=tk.FLAT, font=("Segoe UI", 8),
+                  padx=8, pady=4).pack(fill=tk.X, pady=2)
+
+        # Export status label
+        self.export_status = tk.Label(left, text="", bg="#202020", fg="#17a2b8", font=("Segoe UI", 7))
+        self.export_status.pack(pady=2)
 
         # Current position indicator
         self.pos_label = tk.Label(left, text="", bg="#202020", fg="#0078d4", font=("Segoe UI", 10, "bold"))
@@ -1066,17 +1092,32 @@ class SoilScanLite:
                             yield from scan(e.path)
             except: pass
 
+        # Load export tracking
+        self._load_export_tracking()
+
         self.image_files = sorted(scan(self.input_dir))
         self.listbox.delete(0, tk.END)
         pending = 0
+        exported_count = 0
         for img in self.image_files:
             rel = img.relative_to(self.input_dir)
             out = self.output_dir / rel.with_suffix('.png')
-            s = "✓" if out.exists() else "○"
-            if not out.exists(): pending += 1
+            img_key = str(rel)
+
+            # Status indicators: ○ pending, ✓ processed, ⬆ exported
+            if img_key in self.export_tracking:
+                s = "⬆"
+                exported_count += 1
+            elif out.exists():
+                s = "✓"
+            else:
+                s = "○"
+                pending += 1
+
             self.listbox.insert(tk.END, f"{s} {img.name}")
 
         self.count_label.configure(text=f"{len(self.image_files)} ({pending} pending)")
+        self.export_status.configure(text=f"{exported_count} exported")
         if self.image_files:
             self.current_idx = 0
             self.listbox.selection_set(0)
@@ -1435,6 +1476,192 @@ class SoilScanLite:
         self.progress['value'] = 0
         self.prog_label.configure(text="Done!")
         self._scan()
+
+    def _load_export_tracking(self):
+        """Load export tracking from JSON file."""
+        if not self.output_dir:
+            return
+        tracking_file = self.output_dir / ".export_tracking.json"
+        self.export_log_file = self.output_dir / "export_log.txt"
+
+        if tracking_file.exists():
+            try:
+                with open(tracking_file, 'r') as f:
+                    self.export_tracking = json.load(f)
+            except:
+                self.export_tracking = {}
+        else:
+            self.export_tracking = {}
+
+    def _save_export_tracking(self):
+        """Save export tracking to JSON file."""
+        if not self.output_dir:
+            return
+        tracking_file = self.output_dir / ".export_tracking.json"
+        try:
+            with open(tracking_file, 'w') as f:
+                json.dump(self.export_tracking, f, indent=2)
+        except Exception as e:
+            print(f"Error saving export tracking: {e}")
+
+    def _log_export(self, exported_files, zip_path):
+        """Log export operation to export log file."""
+        if not self.export_log_file:
+            return
+
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with open(self.export_log_file, 'a', encoding='utf-8') as f:
+                f.write(f"\n{'='*60}\n")
+                f.write(f"Export Date: {timestamp}\n")
+                f.write(f"Zip File: {zip_path.name}\n")
+                f.write(f"Total Files: {len(exported_files)}\n")
+                f.write(f"Files:\n")
+                for file in exported_files:
+                    f.write(f"  - {file}\n")
+        except Exception as e:
+            print(f"Error writing export log: {e}")
+
+    def _export_selected(self):
+        """Export selected images to a zip file."""
+        selected = self.listbox.curselection()
+        if not selected:
+            messagebox.showwarning("No Selection", "Please select images to export!")
+            return
+
+        # Get list of selected images that have been processed
+        to_export = []
+        not_processed = []
+
+        for idx in selected:
+            img = self.image_files[idx]
+            rel = img.relative_to(self.input_dir)
+            out = self.output_dir / rel.with_suffix('.png')
+
+            if out.exists():
+                to_export.append((rel, out))
+            else:
+                not_processed.append(img.name)
+
+        if not to_export:
+            messagebox.showwarning("No Processed Images",
+                                   "None of the selected images have been processed yet!")
+            return
+
+        if not_processed:
+            msg = f"{len(not_processed)} selected image(s) not processed:\n" + \
+                  "\n".join(f"  - {n}" for n in not_processed[:5])
+            if len(not_processed) > 5:
+                msg += f"\n  ... and {len(not_processed) - 5} more"
+            msg += f"\n\nContinue exporting {len(to_export)} processed image(s)?"
+            if not messagebox.askyesno("Some Images Not Processed", msg):
+                return
+
+        # Ask for zip filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_name = f"soil_export_{timestamp}.zip"
+        zip_path = filedialog.asksaveasfilename(
+            defaultextension=".zip",
+            filetypes=[("ZIP files", "*.zip")],
+            initialfile=default_name,
+            initialdir=self.output_dir
+        )
+
+        if not zip_path:
+            return
+
+        zip_path = Path(zip_path)
+
+        # Create zip file
+        try:
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for rel, out in to_export:
+                    zf.write(out, arcname=str(rel.with_suffix('.png')))
+
+            # Mark as exported
+            for rel, out in to_export:
+                self.export_tracking[str(rel)] = {
+                    'exported_date': datetime.now().isoformat(),
+                    'zip_file': zip_path.name
+                }
+
+            self._save_export_tracking()
+            self._log_export([str(rel) for rel, _ in to_export], zip_path)
+            self._scan()  # Refresh to update indicators
+
+            messagebox.showinfo("Export Complete",
+                              f"Exported {len(to_export)} image(s) to:\n{zip_path.name}")
+            self.status.configure(text=f"Exported {len(to_export)} images")
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to create zip file:\n{e}")
+
+    def _export_all_edited(self):
+        """Export all processed images to a zip file."""
+        # Get all processed images
+        to_export = []
+
+        for img in self.image_files:
+            rel = img.relative_to(self.input_dir)
+            out = self.output_dir / rel.with_suffix('.png')
+
+            if out.exists():
+                to_export.append((rel, out))
+
+        if not to_export:
+            messagebox.showwarning("No Processed Images",
+                                   "No processed images found to export!")
+            return
+
+        # Ask for confirmation
+        msg = f"Export all {len(to_export)} processed image(s) to a zip file?"
+        if not messagebox.askyesno("Export All", msg):
+            return
+
+        # Ask for zip filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_name = f"soil_all_{timestamp}.zip"
+        zip_path = filedialog.asksaveasfilename(
+            defaultextension=".zip",
+            filetypes=[("ZIP files", "*.zip")],
+            initialfile=default_name,
+            initialdir=self.output_dir
+        )
+
+        if not zip_path:
+            return
+
+        zip_path = Path(zip_path)
+
+        # Create zip file with progress
+        try:
+            total = len(to_export)
+            self.status.configure(text="Exporting...")
+
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for i, (rel, out) in enumerate(to_export):
+                    zf.write(out, arcname=str(rel.with_suffix('.png')))
+                    self.progress['value'] = ((i + 1) / total) * 100
+                    self.root.update_idletasks()
+
+            # Mark all as exported
+            for rel, out in to_export:
+                self.export_tracking[str(rel)] = {
+                    'exported_date': datetime.now().isoformat(),
+                    'zip_file': zip_path.name
+                }
+
+            self._save_export_tracking()
+            self._log_export([str(rel) for rel, _ in to_export], zip_path)
+
+            self.progress['value'] = 0
+            self._scan()  # Refresh to update indicators
+
+            messagebox.showinfo("Export Complete",
+                              f"Exported all {len(to_export)} image(s) to:\n{zip_path.name}")
+            self.status.configure(text=f"Exported all {len(to_export)} images")
+        except Exception as e:
+            self.progress['value'] = 0
+            messagebox.showerror("Export Error", f"Failed to create zip file:\n{e}")
 
 
 def main():

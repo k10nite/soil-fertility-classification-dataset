@@ -57,7 +57,20 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:: Verify installation
 echo.
+echo  Verifying installation...
+python -c "import tkinter, PIL, rembg, onnxruntime, zipfile, json" 2>nul
+if errorlevel 1 (
+    color 0E
+    echo  [WARNING] Some modules may not have installed correctly
+    echo  Try running Setup.bat again
+    echo.
+) else (
+    echo  [OK] All core modules verified
+    echo.
+)
+
 echo  ============================================================
 echo                    SETUP COMPLETE!
 echo  ============================================================
@@ -65,6 +78,19 @@ echo.
 echo  You can now launch SoilScan by double-clicking:
 echo.
 echo      SoilScan.pyw
+echo.
+echo  ============================================================
+echo.
+echo  NEW FEATURES IN THIS VERSION:
+echo.
+echo  [+] Multi-select image export (Ctrl+Click, Shift+Click)
+echo  [+] Export Selected - Create ZIP from selected images
+echo  [+] Export All Edited - Create ZIP from all processed images
+echo  [+] Export tracking - Visual indicators (○ ✓ ⬆)
+echo  [+] Export history log - All exports logged automatically
+echo.
+echo  Status Indicators:
+echo      ○ Pending    ✓ Edited    ⬆ Exported
 echo.
 echo  ============================================================
 echo.

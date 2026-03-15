@@ -26,6 +26,19 @@ Click on any processed result to edit:
 - **RESTORE ORIGINAL** - Replace with full original image
 - **Color traces** - Green (restored) / Red (removed) showing edits
 
+### Export Features
+- **Multi-Select Export** - Select multiple images (Ctrl+Click, Shift+Click) and export as ZIP
+- **Export Selected** - Create a ZIP file from selected processed images
+- **Export All Edited** - Export all processed images to a single ZIP file
+- **Export Tracking** - Visual indicators show which images have been exported (⬆ symbol)
+- **Export Log** - Automatic logging of all exports to `export_log.txt` in output folder
+- **Export History** - JSON tracking file (`.export_tracking.json`) remembers export status
+
+### Status Indicators
+- **○** Pending - Image not yet processed
+- **✓** Edited - Image has been processed and saved
+- **⬆** Exported - Image has been exported in a ZIP file
+
 ### Other Features
 - **GPU Acceleration** - Auto-detects DirectML (AMD/Intel) or CUDA (NVIDIA)
 - **CPU/GPU Toggle** - Switch processing mode on the fly
@@ -62,6 +75,26 @@ Click on any processed result to edit:
 2. Use RESTORE brush to bring back original pixels
 3. Use REMOVE brush to erase unwanted areas
 4. Click "Apply & Save" when done
+```
+
+### Exporting Images
+```
+# Export Selected Images
+1. Hold Ctrl and click images to select multiple
+2. Or use Shift+Click to select a range
+3. Click "Export Selected" button
+4. Choose save location and filename
+5. ZIP file created with all selected processed images
+
+# Export All Edited Images
+1. Click "Export All Edited" button
+2. Choose save location and filename
+3. ZIP file created with all processed images
+
+# Tracking
+- Exported images show ⬆ symbol in the list
+- Export count shown below export buttons
+- View export history in export_log.txt in output folder
 ```
 
 ## Naming Convention
