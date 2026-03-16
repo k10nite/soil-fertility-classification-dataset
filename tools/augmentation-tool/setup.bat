@@ -3,6 +3,9 @@ REM ============================================================
 REM Soil Fertility Augmentation Pipeline - Setup Script
 REM ============================================================
 
+REM Change to the directory where this batch file is located
+cd /d "%~dp0"
+
 echo.
 echo ============================================================
 echo  Soil Fertility Augmentation Pipeline - Setup
