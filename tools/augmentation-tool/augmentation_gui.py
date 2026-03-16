@@ -1,6 +1,6 @@
 """
 Soil Fertility Dataset Augmentation - GUI Application
-User-friendly interface with category-based operation selection
+User-friendly interface with manual operation selection
 """
 
 import os
@@ -15,12 +15,12 @@ import queue
 from datetime import datetime
 
 # Add search paths for operation_based_pipeline.py
-# Priority 1: Same directory as this script (for portable/standalone tool)
-# Priority 2: Dataset root directory (for integrated use)
+# 1. Same directory as this script (for portable/standalone use)
+# 2. Dataset root (original location)
 script_dir = Path(__file__).parent
 parent_dir = script_dir.parent.parent
 
-# Try same directory first (portable), then parent directory (integrated)
+# Try same directory first (portable), then parent directory
 sys.path.insert(0, str(script_dir))
 sys.path.insert(1, str(parent_dir))
 
@@ -52,7 +52,7 @@ class TextQueueHandler(logging.Handler):
 
 
 class AugmentationGUI:
-    """Main GUI application with category-based operation selection"""
+    """Main GUI application with operation selection"""
 
     def __init__(self, root):
         self.root = root
@@ -69,14 +69,14 @@ class AugmentationGUI:
         self.res_1280_var = BooleanVar(value=False)
         self.res_640_var = BooleanVar(value=False)
         self.status_var = StringVar(value="Ready")
-        self.progress_var = DoubleVar(value=0)
+        self.op_progress_var = DoubleVar(value=0)
+        self.overall_progress_var = DoubleVar(value=0)
 
         self.running = False
 
-        # Operation selection variables
-        self.operation_vars = {}  # {operation_name: BooleanVar}
-        self.category_vars = {}   # {category_name: BooleanVar} for category checkboxes
-        self.operations_by_category = {}  # {category_name: [operation_names]}
+        # Category checkboxes - select entire operation types
+        self.category_vars = {}  # {category_name: BooleanVar}
+        self.operations_by_category = {}  # Will be populated by load_operations()
 
         # Create log handler
         self.log_handler = TextQueueHandler()
@@ -93,30 +93,62 @@ class AugmentationGUI:
 
     def load_operations(self):
         """Load operations from the pipeline registry"""
+        # Initialize empty category dict (in case of error)
+        self.operations_by_category = {
+            'Brightness': [],
+            'Contrast': [],
+            'Rotation': [],
+            'Flip': [],
+            'Hue Shift': [],
+            'Saturation': [],
+            'CLAHE': [],
+            'Noise': [],
+            'Perspective': [],
+            'Blur': [],
+            'Sharpen': []
+        }
+
         try:
-            all_ops = OperationRegistry.get_all_operations()
+            # Create a temporary registry to get operation list
+            temp_settings = PipelineSettings(
+                INPUT_DIR=".",
+                OUTPUT_BASE=".",
+                TARGET_SIZE=(1920, 1080)
+            )
+            temp_registry = OperationRegistry(temp_settings)
 
-            # Group operations by category
-            for op_name, op_info in all_ops.items():
-                category = op_info['category']
+            # Categorize operations
+            for op in temp_registry.operations:
+                if 'bright' in op.name:
+                    self.operations_by_category['Brightness'].append(op)
+                elif 'contrast' in op.name:
+                    self.operations_by_category['Contrast'].append(op)
+                elif 'rot' in op.name:
+                    self.operations_by_category['Rotation'].append(op)
+                elif 'flip' in op.name:
+                    self.operations_by_category['Flip'].append(op)
+                elif 'hue' in op.name:
+                    self.operations_by_category['Hue Shift'].append(op)
+                elif 'sat' in op.name:
+                    self.operations_by_category['Saturation'].append(op)
+                elif 'clahe' in op.name:
+                    self.operations_by_category['CLAHE'].append(op)
+                elif 'noise' in op.name:
+                    self.operations_by_category['Noise'].append(op)
+                elif 'perspective' in op.name:
+                    self.operations_by_category['Perspective'].append(op)
+                elif 'blur' in op.name:
+                    self.operations_by_category['Blur'].append(op)
+                elif 'sharpen' in op.name:
+                    self.operations_by_category['Sharpen'].append(op)
 
-                if category not in self.operations_by_category:
-                    self.operations_by_category[category] = []
-
-                self.operations_by_category[category].append(op_name)
-
-            # Create checkbox variables for each operation
-            for op_name in all_ops.keys():
-                self.operation_vars[op_name] = BooleanVar(value=False)
-
-            # Create category checkbox variables
-            for category in self.operations_by_category.keys():
-                self.category_vars[category] = BooleanVar(value=False)
+            # Create checkbox variables for each category (not individual operations)
+            for category, ops in self.operations_by_category.items():
+                if ops:  # Only create checkbox if category has operations
+                    self.category_vars[category] = BooleanVar(value=False)  # All unselected by default
 
         except Exception as e:
             self.log(f"Warning: Could not load operations: {e}", "WARNING")
-            import traceback
-            self.log(traceback.format_exc(), "ERROR")
 
     def build_ui(self):
         # Header
@@ -126,7 +158,7 @@ class AugmentationGUI:
 
         Label(header, text="🌱 Soil Fertility Augmentation",
               font=("Arial", 16, "bold"), bg="#2c3e50", fg="white").pack(pady=(12,3))
-        Label(header, text="Select augmentation operations for batch processing",
+        Label(header, text="Select operations and resolutions for batch processing",
               font=("Arial", 9), bg="#2c3e50", fg="#ecf0f1").pack()
 
         # Main container with two columns
@@ -164,7 +196,7 @@ class AugmentationGUI:
         Checkbutton(res_opts, text="640×480", variable=self.res_640_var, font=("Arial", 9)).pack(side=LEFT, padx=10)
 
         # Operations List
-        ops_frame = LabelFrame(left_col, text="Augmentation Operations", padx=10, pady=10)
+        ops_frame = LabelFrame(left_col, text="Operation Types (Select types to include all variations)", padx=10, pady=10)
         ops_frame.pack(fill=BOTH, expand=True)
 
         # Control buttons
@@ -175,13 +207,13 @@ class AugmentationGUI:
                bg="#27ae60", fg="white", font=("Arial", 9)).pack(side=LEFT, padx=2)
         Button(control_frame, text="✗ Deselect All", command=self.deselect_all_ops,
                bg="#e74c3c", fg="white", font=("Arial", 9)).pack(side=LEFT, padx=2)
-        Button(control_frame, text="Geometric Only", command=lambda: self.select_category_only(['Geometric']),
+        Button(control_frame, text="Geometric Only", command=lambda: self.select_category(['Rotation', 'Flip']),
                font=("Arial", 9)).pack(side=LEFT, padx=2)
-        Button(control_frame, text="Color Only", command=lambda: self.select_category_only(['Color']),
+        Button(control_frame, text="Photometric Only", command=lambda: self.select_category(['Brightness', 'Contrast', 'Hue Shift', 'Saturation']),
                font=("Arial", 9)).pack(side=LEFT, padx=2)
 
         # Scrollable operations list
-        ops_canvas = Canvas(ops_frame, height=350)
+        ops_canvas = Canvas(ops_frame, height=300)
         ops_scrollbar = Scrollbar(ops_frame, orient=VERTICAL, command=ops_canvas.yview)
         ops_scrollable = Frame(ops_canvas)
 
@@ -189,36 +221,20 @@ class AugmentationGUI:
         ops_canvas.create_window((0, 0), window=ops_scrollable, anchor=NW)
         ops_canvas.configure(yscrollcommand=ops_scrollbar.set)
 
-        # Populate operations grouped by category
-        all_ops = OperationRegistry.get_all_operations()
+        # Populate operation categories (not individual variations)
+        for category, ops in self.operations_by_category.items():
+            if ops:
+                # Create checkbox for entire category
+                if category in self.category_vars:
+                    # Build description of variations
+                    variations_text = f"({len(ops)} variations)"
 
-        for category, op_names in self.operations_by_category.items():
-            if op_names:
-                # Category header with checkbox
-                cat_frame = Frame(ops_scrollable, bg="#34495e", pady=5, padx=10)
-                cat_frame.pack(fill=X, pady=(10, 0))
-
-                cat_cb = Checkbutton(cat_frame,
-                                   text=f"{category} ({len(op_names)} operations)",
+                    cb = Checkbutton(ops_scrollable,
+                                   text=f"{category} {variations_text}",
                                    variable=self.category_vars[category],
-                                   command=lambda c=category: self.toggle_category(c),
-                                   font=("Arial", 11, "bold"),
-                                   bg="#34495e",
-                                   fg="white",
-                                   selectcolor="#2c3e50",
+                                   font=("Arial", 10),
                                    anchor=W)
-                cat_cb.pack(fill=X)
-
-                # Individual operations under category
-                for op_name in op_names:
-                    op_info = all_ops[op_name]
-                    op_cb = Checkbutton(ops_scrollable,
-                                       text=f"  • {op_info['name']}",
-                                       variable=self.operation_vars[op_name],
-                                       command=self.update_category_checkboxes,
-                                       font=("Arial", 9),
-                                       anchor=W)
-                    op_cb.pack(fill=X, padx=20, pady=1)
+                    cb.pack(fill=X, padx=10, pady=3)
 
         ops_canvas.pack(side=LEFT, fill=BOTH, expand=True)
         ops_scrollbar.pack(side=RIGHT, fill=Y)
@@ -234,8 +250,13 @@ class AugmentationGUI:
 
         Label(prog_frame, textvariable=self.status_var, font=("Arial", 9, "bold"), anchor=W).pack(fill=X, pady=(0,8))
 
-        self.progress_bar = ttk.Progressbar(prog_frame, variable=self.progress_var, maximum=100)
-        self.progress_bar.pack(fill=X, pady=2)
+        Label(prog_frame, text="Current Operation:", font=("Arial", 8)).pack(anchor=W)
+        self.op_bar = ttk.Progressbar(prog_frame, variable=self.op_progress_var, maximum=100)
+        self.op_bar.pack(fill=X, pady=(2,8))
+
+        Label(prog_frame, text="Overall Progress:", font=("Arial", 8)).pack(anchor=W)
+        self.overall_bar = ttk.Progressbar(prog_frame, variable=self.overall_progress_var, maximum=100)
+        self.overall_bar.pack(fill=X, pady=2)
 
         # Log
         log_frame = LabelFrame(right_col, text="Log Output", padx=10, pady=10)
@@ -257,7 +278,7 @@ class AugmentationGUI:
         btn_frame = Frame(self.root, pady=10)
         btn_frame.pack(fill=X, padx=15)
 
-        self.start_btn = Button(btn_frame, text="▶ Run Augmentation",
+        self.start_btn = Button(btn_frame, text="▶ Run Selected Operations",
                                 command=self.start_aug, bg="#27ae60", fg="white",
                                 font=("Arial", 12, "bold"), padx=25, pady=10)
         self.start_btn.pack(side=LEFT, padx=5)
@@ -273,54 +294,39 @@ class AugmentationGUI:
         # Update selected count periodically
         self.update_selected_count()
 
-    def toggle_category(self, category):
-        """Toggle all operations in a category"""
-        state = self.category_vars[category].get()
-        for op_name in self.operations_by_category[category]:
-            self.operation_vars[op_name].set(state)
-
-    def update_category_checkboxes(self):
-        """Update category checkboxes based on individual operation selection"""
-        for category, op_names in self.operations_by_category.items():
-            selected = sum(1 for op in op_names if self.operation_vars[op].get())
-            if selected == len(op_names):
-                self.category_vars[category].set(True)
-            elif selected == 0:
-                self.category_vars[category].set(False)
-
     def select_all_ops(self):
-        """Select all operations"""
-        for var in self.operation_vars.values():
-            var.set(True)
+        """Select all operation categories"""
         for var in self.category_vars.values():
             var.set(True)
-        self.log("Selected all operations", "INFO")
+        self.log("Selected all operation types", "INFO")
 
     def deselect_all_ops(self):
-        """Deselect all operations"""
-        for var in self.operation_vars.values():
-            var.set(False)
+        """Deselect all operation categories"""
         for var in self.category_vars.values():
             var.set(False)
-        self.log("Deselected all operations", "INFO")
+        self.log("Deselected all operation types", "INFO")
 
-    def select_category_only(self, categories: List[str]):
-        """Select only specific categories"""
+    def select_category(self, categories: List[str]):
+        """Select only specific operation categories"""
         self.deselect_all_ops()
         for category in categories:
             if category in self.category_vars:
                 self.category_vars[category].set(True)
-                self.toggle_category(category)
         self.log(f"Selected: {', '.join(categories)}", "INFO")
 
     def update_selected_count(self):
-        """Update the count of selected operations"""
-        selected = sum(1 for var in self.operation_vars.values() if var.get())
-        if selected == 0:
+        """Update the count of selected operation types and total variations"""
+        # Count selected categories
+        selected_categories = [cat for cat, var in self.category_vars.items() if var.get()]
+        # Count total operations (all variations)
+        total_ops = sum(len(self.operations_by_category[cat]) for cat in selected_categories)
+
+        cat_count = len(selected_categories)
+        if cat_count == 0:
             self.selected_count_label.config(text="No operations selected")
         else:
             self.selected_count_label.config(
-                text=f"{selected} operation{'s' if selected != 1 else ''} selected"
+                text=f"{cat_count} type{'s' if cat_count != 1 else ''} selected ({total_ops} total variations)"
             )
         self.root.after(500, self.update_selected_count)
 
@@ -328,10 +334,7 @@ class AugmentationGUI:
         folder = filedialog.askdirectory(title="Select Input Directory")
         if folder:
             self.input_dir_var.set(folder)
-            # Count images
-            p = Path(folder)
-            imgs = list(p.glob("*.png")) + list(p.glob("*.jpg")) + list(p.glob("*.jpeg"))
-            self.log(f"Input: {folder} ({len(imgs)} images)", "INFO")
+            self.log(f"Input: {folder}", "INFO")
 
     def browse_output(self):
         folder = filedialog.askdirectory(title="Select Output Directory")
@@ -383,10 +386,10 @@ class AugmentationGUI:
             messagebox.showerror("Error", "No images found in input directory")
             return False
 
-        # Check selected operations
-        selected = [op for op, var in self.operation_vars.items() if var.get()]
-        if len(selected) == 0:
-            messagebox.showerror("Error", "Select at least one operation to run")
+        # Check selected categories
+        selected_categories = [cat for cat, var in self.category_vars.items() if var.get()]
+        if len(selected_categories) == 0:
+            messagebox.showerror("Error", "Select at least one operation type to run")
             return False
 
         return True
@@ -399,24 +402,26 @@ class AugmentationGUI:
         if not self.validate():
             return
 
-        # Get selected operations
-        selected_ops = [op for op, var in self.operation_vars.items() if var.get()]
-
-        # Get selected resolutions
-        resolutions = []
-        if self.res_1920_var.get():
-            resolutions.append("1920×1080")
-        if self.res_1280_var.get():
-            resolutions.append("1280×720")
-        if self.res_640_var.get():
-            resolutions.append("640×480")
+        # Get selected categories
+        selected_categories = [cat for cat, var in self.category_vars.items() if var.get()]
+        # Count total operations
+        total_ops = sum(len(self.operations_by_category[cat]) for cat in selected_categories)
 
         # Confirm
+        resolutions = []
+        if self.res_1920_var.get():
+            resolutions.append("1920x1080")
+        if self.res_1280_var.get():
+            resolutions.append("1280x720")
+        if self.res_640_var.get():
+            resolutions.append("640x480")
+
         msg = f"Run augmentation with selected settings?\n\n"
         msg += f"Input: {self.input_dir_var.get()}\n"
         msg += f"Output: {self.output_dir_var.get()}\n"
         msg += f"Resolutions: {', '.join(resolutions)}\n"
-        msg += f"Operations: {len(selected_ops)} selected\n\n"
+        msg += f"Operation Types: {', '.join(selected_categories)}\n"
+        msg += f"Total Variations: {total_ops}\n\n"
         msg += f"This may take a while depending on the number of images and operations."
 
         if not messagebox.askyesno("Confirm", msg):
@@ -427,84 +432,154 @@ class AugmentationGUI:
         self.log_text.delete(1.0, END)
         self.log_text.config(state='disabled')
 
-        self.progress_var.set(0)
+        self.op_progress_var.set(0)
+        self.overall_progress_var.set(0)
 
         self.running = True
         self.start_btn.config(state='disabled')
 
         # Start thread
         thread = threading.Thread(target=self.run_augmentation,
-                                 args=(selected_ops, resolutions), daemon=True)
+                                 args=(resolutions, selected_categories), daemon=True)
         thread.start()
 
-    def run_augmentation(self, selected_ops, res_names):
+    def run_augmentation(self, res_names, selected_categories):
         try:
-            # Parse resolutions
             resolutions = []
-            if "1920×1080" in res_names:
+            if "1920x1080" in res_names:
                 resolutions.append((1920, 1080, "1920x1080"))
-            if "1280×720" in res_names:
+            if "1280x720" in res_names:
                 resolutions.append((1280, 720, "1280x720"))
-            if "640×480" in res_names:
+            if "640x480" in res_names:
                 resolutions.append((640, 480, "640x480"))
 
             total_res = len(resolutions)
-            self.log(f"Starting augmentation: {len(selected_ops)} operations × {total_res} resolution(s)", "INFO")
 
-            total_processed = 0
-            total_failed = 0
+            # Count total operations from selected categories
+            total_ops = sum(len(self.operations_by_category[cat]) for cat in selected_categories)
+
+            self.log(f"Starting augmentation: {len(selected_categories)} types ({total_ops} variations) × {total_res} resolution(s)", "INFO")
 
             for idx, (width, height, name) in enumerate(resolutions):
                 self.status_var.set(f"Processing {name}... ({idx+1}/{total_res})")
                 self.log(f"\n{'='*60}", "INFO")
                 self.log(f"Resolution: {name}", "INFO")
-                self.log(f"{'='*60}", "INFO")
+                self.log(f"{'='*60}\n", "INFO")
 
-                # Create output directory for this resolution
                 output_dir = Path(self.output_dir_var.get()) / name
 
-                # Create settings
                 settings = PipelineSettings(
-                    input_dir=self.input_dir_var.get(),
-                    output_dir=str(output_dir),
-                    operations=selected_ops,
-                    resize=(width, height)
+                    INPUT_DIR=self.input_dir_var.get(),
+                    OUTPUT_BASE=str(output_dir),
+                    TARGET_SIZE=(width, height),
+                    BACKGROUND_COLOR=(0, 0, 0)
                 )
 
-                # Create pipeline
-                pipeline = OperationPipeline(settings)
+                # Create full registry
+                registry = OperationRegistry(settings)
 
-                # Run with progress callback
-                def progress_callback(current, total, filename):
-                    overall_progress = ((idx * 100) + (current / total * 100)) / total_res
-                    self.progress_var.set(overall_progress)
-                    self.status_var.set(f"{name}: {filename} ({current}/{total})")
+                # Filter to selected categories only - include ALL variations
+                selected_operations = []
+                for op in registry.operations:
+                    # Check which category this operation belongs to
+                    for category in selected_categories:
+                        if category in self.operations_by_category:
+                            category_ops = self.operations_by_category[category]
+                            # Check if this operation is in the selected category
+                            if any(cat_op.folder == op.folder and cat_op.name == op.name
+                                   for cat_op in category_ops):
+                                selected_operations.append(op)
+                                break
 
-                result = pipeline.run(progress_callback=progress_callback)
+                self.log(f"Running {len(selected_operations)} operation variations", "INFO")
 
-                if result['success']:
-                    self.log(f"✓ {name} complete: {result['processed']}/{result['total']} processed", "INFO")
-                    total_processed += result['processed']
-                    total_failed += result['failed']
-                else:
-                    self.log(f"✗ {name} failed: {result['message']}", "ERROR")
-                    total_failed += result.get('total', 0)
+                # Check for existing output (resume detection)
+                completed_ops = []
+                partial_ops = []
+                for op in selected_operations:
+                    check_folder = output_dir / op.folder
+                    if check_folder.exists():
+                        existing = list(check_folder.glob("*.png")) + list(check_folder.glob("*.jpg"))
+                        if len(existing) > 0:
+                            completed_ops.append(f"{op.folder} ({len(existing)} files)")
 
-            # Show results
+                if completed_ops:
+                    self.log(f"RESUME MODE: Found existing output, will skip completed operations", "INFO")
+                    self.log(f"Existing: {', '.join(completed_ops[:5])}" + (" ..." if len(completed_ops) > 5 else ""), "INFO")
+
+                # Get input images
+                input_path = Path(settings.INPUT_DIR)
+                images = list(input_path.glob("*.png")) + list(input_path.glob("*.jpg"))
+                total_images = len(images)
+
+                # Process each selected operation
+                for op_idx, op in enumerate(selected_operations):
+                    self.status_var.set(f"{name}: {op.folder}/{op.name}")
+
+                    output_folder = output_dir / op.folder
+                    output_folder.mkdir(parents=True, exist_ok=True)
+
+                    # Check if operation already completed (resume functionality)
+                    existing_files = list(output_folder.glob("*.png")) + list(output_folder.glob("*.jpg"))
+                    if len(existing_files) >= total_images:
+                        self.log(f"[{op_idx+1}/{len(selected_operations)}] ✓ SKIPPED: {op.folder}/{op.name} (already complete - {len(existing_files)} files)", "INFO")
+                        # Update progress
+                        overall = ((idx * len(selected_operations)) + (op_idx + 1)) / (total_res * len(selected_operations)) * 100
+                        self.overall_progress_var.set(overall)
+                        self.op_progress_var.set(100)
+                        continue
+
+                    self.log(f"[{op_idx+1}/{len(selected_operations)}] {op.folder}/{op.name} - {op.description}", "INFO")
+                    if len(existing_files) > 0:
+                        self.log(f"  → Resuming: {len(existing_files)}/{total_images} already processed", "INFO")
+
+                    # Process images
+                    processor = ImageProcessor(settings)
+                    processed_count = 0
+                    skipped_count = 0
+
+                    for img_idx, img_path in enumerate(images):
+                        # Check if output already exists (per-image resume)
+                        output_name = f"{img_path.stem}_{op.name}.png"
+                        output_file = output_folder / output_name
+
+                        if output_file.exists():
+                            skipped_count += 1
+                            # Update operation progress
+                            progress = ((img_idx + 1) / len(images)) * 100
+                            self.op_progress_var.set(progress)
+                            continue
+
+                        # Load
+                        img = processor.load_and_prepare_image(img_path)
+                        if img is None:
+                            continue
+
+                        # Apply operation
+                        result = op.pipeline(image=img)
+                        augmented = result['image']
+
+                        # Save
+                        import cv2
+                        cv2.imwrite(str(output_file), cv2.cvtColor(augmented, cv2.COLOR_RGB2BGR))
+                        processed_count += 1
+
+                        # Update operation progress
+                        progress = ((img_idx + 1) / len(images)) * 100
+                        self.op_progress_var.set(progress)
+
+                    # Log completion stats
+                    if skipped_count > 0:
+                        self.log(f"  → Completed: {processed_count} new, {skipped_count} skipped", "INFO")
+
+                    # Update overall progress
+                    overall = ((idx * total_ops) + (op_idx + 1)) / (total_res * total_ops) * 100
+                    self.overall_progress_var.set(overall)
+
+                self.log(f"Completed {name}!", "INFO")
+
             self.status_var.set("✓ All augmentations complete!")
-            self.progress_var.set(100)
-
-            self.log(f"\n{'='*60}", "INFO")
-            self.log(f"✓ All resolutions complete!", "INFO")
-            self.log(f"Total processed: {total_processed}", "INFO")
-            self.log(f"Total failed: {total_failed}", "INFO")
-
-            messagebox.showinfo("Success",
-                f"Augmentation completed!\n\n"
-                f"Resolutions: {total_res}\n"
-                f"Operations: {len(selected_ops)}\n"
-                f"Processed: {total_processed} images\n"
-                f"Failed: {total_failed} images")
+            messagebox.showinfo("Success", f"Augmentation completed!\n\n{len(selected_categories)} types ({total_ops} variations) × {total_res} resolution(s)")
 
         except Exception as e:
             self.status_var.set(f"Error: {str(e)}")
