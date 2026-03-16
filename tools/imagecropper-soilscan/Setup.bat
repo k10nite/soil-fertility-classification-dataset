@@ -2,6 +2,9 @@
 title SoilScan Setup
 color 0A
 
+:: Change to the directory where this batch file is located
+cd /d "%~dp0"
+
 echo.
 echo  ============================================================
 echo                     SOILSCAN SETUP

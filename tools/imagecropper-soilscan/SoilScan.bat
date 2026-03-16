@@ -1,6 +1,9 @@
 @echo off
 title SoilScan - Soil Sample Background Remover
 
+:: Change to the directory where this batch file is located
+cd /d "%~dp0"
+
 :: Check if venv exists
 if not exist "venv" (
     echo Creating Python virtual environment...
