@@ -65,6 +65,9 @@ class AugmentationGUI:
         # Variables
         self.input_dir_var = StringVar()
         self.output_dir_var = StringVar()
+        self.res_1920_var = BooleanVar(value=True)
+        self.res_1280_var = BooleanVar(value=False)
+        self.res_640_var = BooleanVar(value=False)
         self.status_var = StringVar(value="Ready")
         self.progress_var = DoubleVar(value=0)
 
@@ -149,6 +152,16 @@ class AugmentationGUI:
         Button(dir_frame, text="Browse", command=self.browse_output, width=8).grid(row=1, column=2)
 
         dir_frame.columnconfigure(1, weight=1)
+
+        # Resolutions
+        res_frame = LabelFrame(left_col, text="Output Resolutions", padx=10, pady=8)
+        res_frame.pack(fill=X, pady=(0,10))
+
+        res_opts = Frame(res_frame)
+        res_opts.pack(fill=X)
+        Checkbutton(res_opts, text="1920×1080", variable=self.res_1920_var, font=("Arial", 9)).pack(side=LEFT, padx=10)
+        Checkbutton(res_opts, text="1280×720", variable=self.res_1280_var, font=("Arial", 9)).pack(side=LEFT, padx=10)
+        Checkbutton(res_opts, text="640×480", variable=self.res_640_var, font=("Arial", 9)).pack(side=LEFT, padx=10)
 
         # Operations List
         ops_frame = LabelFrame(left_col, text="Augmentation Operations", padx=10, pady=10)
@@ -359,6 +372,9 @@ class AugmentationGUI:
         if not self.output_dir_var.get():
             messagebox.showerror("Error", "Select output directory")
             return False
+        if not any([self.res_1920_var.get(), self.res_1280_var.get(), self.res_640_var.get()]):
+            messagebox.showerror("Error", "Select at least one resolution")
+            return False
 
         # Check for images
         p = Path(self.input_dir_var.get())
@@ -386,10 +402,20 @@ class AugmentationGUI:
         # Get selected operations
         selected_ops = [op for op, var in self.operation_vars.items() if var.get()]
 
+        # Get selected resolutions
+        resolutions = []
+        if self.res_1920_var.get():
+            resolutions.append("1920×1080")
+        if self.res_1280_var.get():
+            resolutions.append("1280×720")
+        if self.res_640_var.get():
+            resolutions.append("640×480")
+
         # Confirm
         msg = f"Run augmentation with selected settings?\n\n"
         msg += f"Input: {self.input_dir_var.get()}\n"
         msg += f"Output: {self.output_dir_var.get()}\n"
+        msg += f"Resolutions: {', '.join(resolutions)}\n"
         msg += f"Operations: {len(selected_ops)} selected\n\n"
         msg += f"This may take a while depending on the number of images and operations."
 
@@ -408,47 +434,77 @@ class AugmentationGUI:
 
         # Start thread
         thread = threading.Thread(target=self.run_augmentation,
-                                 args=(selected_ops,), daemon=True)
+                                 args=(selected_ops, resolutions), daemon=True)
         thread.start()
 
-    def run_augmentation(self, selected_ops):
+    def run_augmentation(self, selected_ops, res_names):
         try:
-            # Create settings
-            settings = PipelineSettings(
-                input_dir=self.input_dir_var.get(),
-                output_dir=self.output_dir_var.get(),
-                operations=selected_ops
-            )
+            # Parse resolutions
+            resolutions = []
+            if "1920×1080" in res_names:
+                resolutions.append((1920, 1080, "1920x1080"))
+            if "1280×720" in res_names:
+                resolutions.append((1280, 720, "1280x720"))
+            if "640×480" in res_names:
+                resolutions.append((640, 480, "640x480"))
 
-            self.log(f"Starting augmentation with {len(selected_ops)} operations", "INFO")
+            total_res = len(resolutions)
+            self.log(f"Starting augmentation: {len(selected_ops)} operations × {total_res} resolution(s)", "INFO")
 
-            # Create pipeline
-            pipeline = OperationPipeline(settings)
+            total_processed = 0
+            total_failed = 0
 
-            # Run with progress callback
-            def progress_callback(current, total, filename):
-                progress = (current / total) * 100
-                self.progress_var.set(progress)
-                self.status_var.set(f"Processing: {filename} ({current}/{total})")
+            for idx, (width, height, name) in enumerate(resolutions):
+                self.status_var.set(f"Processing {name}... ({idx+1}/{total_res})")
+                self.log(f"\n{'='*60}", "INFO")
+                self.log(f"Resolution: {name}", "INFO")
+                self.log(f"{'='*60}", "INFO")
 
-            result = pipeline.run(progress_callback=progress_callback)
+                # Create output directory for this resolution
+                output_dir = Path(self.output_dir_var.get()) / name
+
+                # Create settings
+                settings = PipelineSettings(
+                    input_dir=self.input_dir_var.get(),
+                    output_dir=str(output_dir),
+                    operations=selected_ops,
+                    resize=(width, height)
+                )
+
+                # Create pipeline
+                pipeline = OperationPipeline(settings)
+
+                # Run with progress callback
+                def progress_callback(current, total, filename):
+                    overall_progress = ((idx * 100) + (current / total * 100)) / total_res
+                    self.progress_var.set(overall_progress)
+                    self.status_var.set(f"{name}: {filename} ({current}/{total})")
+
+                result = pipeline.run(progress_callback=progress_callback)
+
+                if result['success']:
+                    self.log(f"✓ {name} complete: {result['processed']}/{result['total']} processed", "INFO")
+                    total_processed += result['processed']
+                    total_failed += result['failed']
+                else:
+                    self.log(f"✗ {name} failed: {result['message']}", "ERROR")
+                    total_failed += result.get('total', 0)
 
             # Show results
-            self.status_var.set("✓ Augmentation complete!")
+            self.status_var.set("✓ All augmentations complete!")
             self.progress_var.set(100)
 
-            if result['success']:
-                self.log(f"✓ Success: {result['processed']}/{result['total']} images processed", "INFO")
-                if result['failed'] > 0:
-                    self.log(f"⚠ {result['failed']} images failed", "WARNING")
+            self.log(f"\n{'='*60}", "INFO")
+            self.log(f"✓ All resolutions complete!", "INFO")
+            self.log(f"Total processed: {total_processed}", "INFO")
+            self.log(f"Total failed: {total_failed}", "INFO")
 
-                messagebox.showinfo("Success",
-                    f"Augmentation completed!\n\n"
-                    f"Processed: {result['processed']}/{result['total']} images\n"
-                    f"Failed: {result['failed']} images")
-            else:
-                self.log(f"✗ Failed: {result['message']}", "ERROR")
-                messagebox.showerror("Error", f"Augmentation failed:\n{result['message']}")
+            messagebox.showinfo("Success",
+                f"Augmentation completed!\n\n"
+                f"Resolutions: {total_res}\n"
+                f"Operations: {len(selected_ops)}\n"
+                f"Processed: {total_processed} images\n"
+                f"Failed: {total_failed} images")
 
         except Exception as e:
             self.status_var.set(f"Error: {str(e)}")
