@@ -23,7 +23,6 @@ Architecture:
     ↓
     All outputs: 1920x1080, BLACK background, LANCZOS4 interpolation
 
-Author: Claude
 Date: 2026-03-16
 """
 
