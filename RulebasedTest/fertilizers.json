@@ -1,0 +1,18 @@
+{
+  "inventory": [
+    {"name": "Urea", "n": 46, "p": 0, "k": 0},
+    {"name": "Complete (14-14-14)", "n": 14, "p": 14, "k": 14},
+    {"name": "Muriate of Potash", "n": 0, "p": 0, "k": 60},
+    {"name": "Ammophos", "n": 16, "p": 20, "k": 0},
+    {"name": "Calcium Nitrate", "n": 15.4, "p": 0, "k": 0},
+    {"name": "15-9-20 Compound", "n": 15, "p": 9, "k": 20},
+    {"name": "13-33-21 Compound", "n": 13, "p": 33, "k": 21},
+    {"name": "Complete (16-16-16)", "n": 16, "p": 16, "k": 16},
+    {"name": "13-31-21 Compound", "n": 13, "p": 31, "k": 21},
+    {"name": "19-4-19 Compound", "n": 19, "p": 4, "k": 19},
+    {"name": "Single Superphosphate (18)", "n": 0, "p": 18, "k": 0},
+    {"name": "Single Superphosphate (20)", "n": 0, "p": 20, "k": 0},
+    {"name": "Single Superphosphate (22)", "n": 0, "p": 22, "k": 0},
+    {"name": "Ammonium Sulfate", "n": 21, "p": 0, "k": 0}
+  ]
+}
