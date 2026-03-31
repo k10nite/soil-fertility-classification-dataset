@@ -1,0 +1,22 @@
+========================================
+SOIL AUGMENTATION TOOL - QUICK START
+========================================
+
+FIRST TIME SETUP:
+1. Double-click: setup.bat
+2. Wait for installation to complete
+
+LAUNCH THE TOOL:
+- Double-click: start.bat (shows status)
+- Or: start_silent.bat (no console)
+
+PORTABLE:
+- Copy this folder anywhere
+- Rename it to anything you want
+- It will still work!
+
+HELP:
+- Full guide: AUGMENTATION_README.md
+- Setup guide: PORTABLE_SETUP.md
+
+========================================

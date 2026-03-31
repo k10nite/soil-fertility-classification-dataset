@@ -1,0 +1,39 @@
+========================================
+   SOILSCAN - QUICK START GUIDE
+========================================
+
+FIRST TIME SETUP:
+1. Double-click: Setup.bat
+2. Wait for installation (creates venv)
+3. Installation complete!
+
+LAUNCH THE TOOL:
+- Double-click: SoilScan.pyw (clean launch)
+- Or: SoilScan.bat (shows console)
+
+PORTABLE:
+- Copy this folder anywhere
+- Rename it to anything you want
+- Run Setup.bat once in new location
+- It will work perfectly!
+
+KEYBOARD SHORTCUTS:
+- Enter: Apply Lasso
+- Ctrl+Enter: AI + Lasso
+- Space/→: Next image
+- ←: Previous image
+- Del/Esc: Clear selection
+
+EXPORT OPTIONS:
+- Export Selected (Ctrl+Click to select)
+- Export All Edited
+- Creates ZIP files automatically
+
+STATUS INDICATORS:
+○ Pending  ✓ Edited  ⬆ Exported
+
+HELP:
+- User guide: README.md
+- Setup guide: PORTABLE_SETUP.md
+
+========================================
