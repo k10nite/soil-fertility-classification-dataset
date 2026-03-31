@@ -1,3 +1,4 @@
 organized_images/**/*.jpg filter=lfs diff=lfs merge=lfs -text
 organized_images/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
 organized_images/**/*.png filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
