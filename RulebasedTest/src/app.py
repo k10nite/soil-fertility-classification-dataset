@@ -147,21 +147,64 @@ try:
         adj_n_ha, adj_p_ha, adj_k_ha = adjust_targets_with_ph(base_n, base_p, base_k, ph_res)
 
         if st.button("Calculate Prescription", type="primary"):
-            # SCALING: Multiply rates by actual land size (area_ha)
+            # 1. SCALING: Multiply rates by actual land size (area_ha)
             t_base_n, t_base_p, t_base_k = base_n * area_ha, base_p * area_ha, base_k * area_ha
             t_adj_n, t_adj_p, t_adj_k = adj_n_ha * area_ha, adj_p_ha * area_ha, adj_k_ha * area_ha
 
             st.success(f"Results for {raw_area} {unit}")
             
-            # Display Summary Table
+            # 2. SOIL pH ASSESSMENT SECTION
+            st.subheader("Soil pH Assessment")
+            left, right = st.columns(2)
+
+            # Extracting values from ph_res (calculated before the button press)
+            ph_status = ph_res.get("ph_status", "N/A").replace("_", " ").title()
+            target_ph = ph_res.get("target_ph", "N/A")
+            lime_trigger_ph = ph_res.get("lime_trigger_ph", 6.0) # Default if missing
+            within_range = ph_res.get("within_target_range", soil_ph >= 6.0)
+            liming_needed = ph_res.get("liming_recommended", soil_ph < 5.5)
+            lime_test_needed = ph_res.get("lime_requirement_test_needed", soil_ph < 5.0)
+
+            with left:
+                status_key = ph_res.get("ph_status", "")
+                if "acidic" in status_key:
+                    st.error(f"Soil Status: {ph_status}")
+                elif "alkaline" in status_key:
+                    st.warning(f"Soil Status: {ph_status}")
+                else:
+                    st.success(f"Soil Status: {ph_status}")
+                st.write(f"**Target pH:** {target_ph}")
+                st.write(f"**Lime Trigger pH:** {lime_trigger_ph}")
+
+            with right:
+                st.metric("Within Target Range", "Yes" if within_range else "No")
+                st.metric("Liming Recommended", "Yes" if liming_needed else "No")
+                st.metric("Lime Requirement Test Needed", "Yes" if lime_test_needed else "No")
+
+            # 3. WARNINGS AND IMPACTS
+            if ph_res.get("warnings"):
+                for warning in ph_res["warnings"]:
+                    st.warning(warning)
+
+            effects = ph_res.get("nutrient_availability_effects", [])
+            if effects:
+                st.markdown("### Nutrient Impact")
+                for effect in effects:
+                    parameter = effect["parameter"].replace("_", " ").title()
+                    impact = effect["effect"].replace("_", " ").title()
+                    st.info(f"{parameter}: {impact}")
+
+            st.divider() # Visual separator before NPK results
+
+            # 4. NPK SUMMARY TABLE
             summary_df = pd.DataFrame([
                 {"Scenario": "Standard Need (kg)", "N": t_base_n, "P": t_base_p, "K": t_base_k},
                 {"Scenario": "pH-Adjusted Need (kg)", "N": t_adj_n, "P": t_adj_p, "K": t_adj_k}
             ]).set_index("Scenario")
             st.table(summary_df.style.format("{:.2f}"))
 
+            # 5. MIX COMPARISON
             col1, col2 = st.columns(2)
-            
             with col1:
                 st.markdown("### Standard Mix")
                 base_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules)
