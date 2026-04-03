@@ -19,7 +19,7 @@ echo Local Directory: %PROJ_DIR%
 echo.
 echo -------------------------------------------------------
 :: python -m streamlit ensures the correct environment is used
-python -m streamlit run src/app.py
+python -m streamlit run src/app_with_ph.py
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

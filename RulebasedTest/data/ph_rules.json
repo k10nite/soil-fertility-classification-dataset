@@ -1,0 +1,640 @@
+{
+  "module_name": "soil_ph_rule_engine",
+  "version": "2.0.0",
+  "scope": {
+    "paper_limited": true,
+    "supported_crops": [
+      "cabbage",
+      "potato",
+      "carrot",
+      "lettuce",
+      "broccoli",
+      "snap_bean",
+      "tomato"
+    ],
+    "notes": [
+      "This pH rule set is limited to the crop coverage stated in the thesis.",
+      "Lime requirement testing is triggered for soils with pH < 5.0, following the thesis methodology."
+    ]
+  },
+  "purpose": "pH-only rule engine for crop-specific fertilizer recommendation and liming trigger",
+  "required_inputs": {
+    "crop": "string",
+    "soil_ph": "number"
+  },
+  "optional_inputs": {
+    "buffer_ph": "number|null",
+    "lime_requirement_value": "number|null",
+    "potato_scab_sensitive": "boolean|null",
+    "legume_rotation_present": "boolean|null"
+  },
+  "outputs": {
+    "resolved_crop": "string",
+    "ph_status": "string",
+    "target_ph": "number",
+    "lime_trigger_ph": "number",
+    "within_target_range": "boolean",
+    "liming_recommended": "boolean",
+    "lime_requirement_test_needed": "boolean",
+    "liming_priority": "none|low|medium|high|very_high",
+    "nutrient_availability_effects": "array",
+    "warnings": "array",
+    "actions": "array",
+    "decision_trace": "array"
+  },
+  "global_rules": {
+    "lime_requirement_test_trigger_ph": 5.0,
+    "alkaline_watch_threshold": 7.5,
+    "strong_acidity_threshold": 5.5,
+    "severe_acidity_threshold": 5.0
+  },
+  "crop_profiles": {
+    "cabbage": {
+      "target_ph": 6.5,
+      "lime_trigger_ph": 6.2,
+      "category": "highland_vegetable"
+    },
+    "potato": {
+      "target_ph_default": 5.2,
+      "target_ph_if_not_scab_sensitive": 6.0,
+      "lime_trigger_ph_default": 5.0,
+      "lime_trigger_ph_if_not_scab_sensitive": 5.5,
+      "category": "highland_vegetable"
+    },
+    "carrot": {
+      "target_ph": 6.0,
+      "lime_trigger_ph": 5.5,
+      "category": "highland_vegetable"
+    },
+    "lettuce": {
+      "target_ph": 6.5,
+      "lime_trigger_ph": 6.0,
+      "category": "highland_vegetable"
+    },
+    "broccoli": {
+      "target_ph": 6.5,
+      "lime_trigger_ph": 6.2,
+      "category": "highland_vegetable"
+    },
+    "snap_bean": {
+      "target_ph": 6.2,
+      "lime_trigger_ph": 6.0,
+      "category": "highland_vegetable"
+    },
+    "tomato": {
+      "target_ph": 6.5,
+      "lime_trigger_ph": 6.0,
+      "category": "highland_vegetable"
+    }
+  },
+  "preprocessing_rules": [
+    {
+      "id": "PREP_001",
+      "if": {
+        "crop_not_supported": true
+      },
+      "then": {
+        "error": "Unsupported crop. This rule set only supports cabbage, potato, carrot, lettuce, broccoli, snap_bean, and tomato."
+      }
+    },
+    {
+      "id": "PREP_002",
+      "if": {
+        "crop": "potato",
+        "potato_scab_sensitive": true
+      },
+      "then": {
+        "resolved_crop": "potato",
+        "target_ph": 5.2,
+        "lime_trigger_ph": 5.0
+      }
+    },
+    {
+      "id": "PREP_003",
+      "if": {
+        "crop": "potato",
+        "potato_scab_sensitive": false
+      },
+      "then": {
+        "resolved_crop": "potato",
+        "target_ph": 6.0,
+        "lime_trigger_ph": 5.5
+      }
+    },
+    {
+      "id": "PREP_004",
+      "if": {
+        "crop": "potato",
+        "potato_scab_sensitive": null
+      },
+      "then": {
+        "resolved_crop": "potato",
+        "target_ph": 5.2,
+        "lime_trigger_ph": 5.0,
+        "warnings": [
+          "Potato scab sensitivity not provided. Defaulting to conservative potato pH profile."
+        ]
+      }
+    },
+    {
+      "id": "PREP_005",
+      "if": {
+        "crop": "cabbage"
+      },
+      "then": {
+        "resolved_crop": "cabbage",
+        "target_ph": 6.5,
+        "lime_trigger_ph": 6.2
+      }
+    },
+    {
+      "id": "PREP_006",
+      "if": {
+        "crop": "carrot"
+      },
+      "then": {
+        "resolved_crop": "carrot",
+        "target_ph": 6.0,
+        "lime_trigger_ph": 5.5
+      }
+    },
+    {
+      "id": "PREP_007",
+      "if": {
+        "crop": "lettuce"
+      },
+      "then": {
+        "resolved_crop": "lettuce",
+        "target_ph": 6.5,
+        "lime_trigger_ph": 6.0
+      }
+    },
+    {
+      "id": "PREP_008",
+      "if": {
+        "crop": "broccoli"
+      },
+      "then": {
+        "resolved_crop": "broccoli",
+        "target_ph": 6.5,
+        "lime_trigger_ph": 6.2
+      }
+    },
+    {
+      "id": "PREP_009",
+      "if": {
+        "crop": "snap_bean"
+      },
+      "then": {
+        "resolved_crop": "snap_bean",
+        "target_ph": 6.2,
+        "lime_trigger_ph": 6.0
+      }
+    },
+    {
+      "id": "PREP_010",
+      "if": {
+        "crop": "tomato"
+      },
+      "then": {
+        "resolved_crop": "tomato",
+        "target_ph": 6.5,
+        "lime_trigger_ph": 6.0
+      }
+    }
+  ],
+  "ph_classification_rules": [
+    {
+      "id": "PH_001",
+      "if": {
+        "soil_ph": {
+          "lt": 5.0
+        }
+      },
+      "then": {
+        "ph_status": "severely_acidic",
+        "liming_priority": "very_high"
+      }
+    },
+    {
+      "id": "PH_002",
+      "if": {
+        "soil_ph": {
+          "gte": 5.0,
+          "lt": 5.5
+        }
+      },
+      "then": {
+        "ph_status": "strongly_acidic",
+        "liming_priority": "high"
+      }
+    },
+    {
+      "id": "PH_003",
+      "if": {
+        "soil_ph": {
+          "gte": 5.5,
+          "lt": 6.0
+        }
+      },
+      "then": {
+        "ph_status": "moderately_acidic",
+        "liming_priority": "medium"
+      }
+    },
+    {
+      "id": "PH_004",
+      "if": {
+        "soil_ph": {
+          "gte": 6.0,
+          "lt": 6.5
+        }
+      },
+      "then": {
+        "ph_status": "slightly_acidic_near_optimum",
+        "liming_priority": "low"
+      }
+    },
+    {
+      "id": "PH_005",
+      "if": {
+        "soil_ph": {
+          "gte": 6.5,
+          "lte": 7.0
+        }
+      },
+      "then": {
+        "ph_status": "optimum_for_most_supported_crops",
+        "liming_priority": "none"
+      }
+    },
+    {
+      "id": "PH_006",
+      "if": {
+        "soil_ph": {
+          "gt": 7.0,
+          "lt": 7.5
+        }
+      },
+      "then": {
+        "ph_status": "mildly_alkaline",
+        "liming_priority": "none"
+      }
+    },
+    {
+      "id": "PH_007",
+      "if": {
+        "soil_ph": {
+          "gte": 7.5
+        }
+      },
+      "then": {
+        "ph_status": "alkaline_high_risk",
+        "liming_priority": "none"
+      }
+    }
+  ],
+  "crop_target_rules": [
+    {
+      "id": "TARGET_001",
+      "logic": "within_target_range = soil_ph >= lime_trigger_ph AND soil_ph <= (target_ph + 0.5)"
+    },
+    {
+      "id": "TARGET_002",
+      "if": {
+        "soil_ph": {
+          "lt_field": "lime_trigger_ph"
+        }
+      },
+      "then": {
+        "liming_recommended": true
+      }
+    },
+    {
+      "id": "TARGET_003",
+      "if": {
+        "soil_ph": {
+          "gte_field": "lime_trigger_ph"
+        }
+      },
+      "then": {
+        "liming_recommended": false
+      }
+    }
+  ],
+  "lime_requirement_rules": [
+    {
+      "id": "LIME_REQ_001",
+      "if": {
+        "soil_ph": {
+          "lt": 5.0
+        }
+      },
+      "then": {
+        "lime_requirement_test_needed": true,
+        "actions": [
+          "trigger_lime_requirement_analysis",
+          "flag_exact_lime_rate_as_pending_lab_result"
+        ]
+      }
+    },
+    {
+      "id": "LIME_REQ_002",
+      "if": {
+        "soil_ph": {
+          "gte": 5.0
+        }
+      },
+      "then": {
+        "lime_requirement_test_needed": false
+      }
+    },
+    {
+      "id": "LIME_REQ_003",
+      "if": {
+        "crop": "potato",
+        "potato_scab_sensitive": true,
+        "soil_ph": {
+          "gte": 5.0,
+          "lte": 5.4
+        }
+      },
+      "then": {
+        "liming_recommended": false,
+        "lime_requirement_test_needed": false,
+        "warnings": [
+          "Potato special case: low pH may be acceptable to reduce scab risk."
+        ],
+        "actions": [
+          "maintain_potato_specific_ph_profile"
+        ]
+      }
+    },
+    {
+      "id": "LIME_REQ_004",
+      "if": {
+        "soil_ph": {
+          "gt": 7.0
+        }
+      },
+      "then": {
+        "liming_recommended": false,
+        "lime_requirement_test_needed": false,
+        "warnings": [
+          "Do not recommend lime in alkaline soil."
+        ],
+        "actions": [
+          "block_liming",
+          "watch_for_micronutrient_constraints"
+        ]
+      }
+    }
+  ],
+  "nutrient_availability_rules": [
+    {
+      "id": "AVAIL_001",
+      "if": {
+        "soil_ph": {
+          "lt": 5.0
+        }
+      },
+      "then": {
+        "nutrient_availability_effects": [
+          {
+            "parameter": "phosphorus",
+            "effect": "strongly_reduced_availability"
+          },
+          {
+            "parameter": "nitrogen_use_efficiency",
+            "effect": "reduced"
+          },
+          {
+            "parameter": "root_environment",
+            "effect": "high_toxicity_risk"
+          },
+          {
+            "parameter": "microbial_activity",
+            "effect": "strongly_suppressed"
+          }
+        ]
+      }
+    },
+    {
+      "id": "AVAIL_002",
+      "if": {
+        "soil_ph": {
+          "gte": 5.0,
+          "lt": 5.5
+        }
+      },
+      "then": {
+        "nutrient_availability_effects": [
+          {
+            "parameter": "phosphorus",
+            "effect": "reduced_availability"
+          },
+          {
+            "parameter": "nitrogen_use_efficiency",
+            "effect": "partially_reduced"
+          },
+          {
+            "parameter": "microbial_activity",
+            "effect": "suboptimal"
+          }
+        ]
+      }
+    },
+    {
+      "id": "AVAIL_003",
+      "if": {
+        "soil_ph": {
+          "gte": 5.5,
+          "lt": 6.0
+        }
+      },
+      "then": {
+        "nutrient_availability_effects": [
+          {
+            "parameter": "phosphorus",
+            "effect": "partly_limited"
+          },
+          {
+            "parameter": "nitrogen_use_efficiency",
+            "effect": "near_acceptable"
+          }
+        ]
+      }
+    },
+    {
+      "id": "AVAIL_004",
+      "if": {
+        "soil_ph": {
+          "gte": 6.0,
+          "lte": 7.0
+        }
+      },
+      "then": {
+        "nutrient_availability_effects": [
+          {
+            "parameter": "phosphorus",
+            "effect": "good_availability"
+          },
+          {
+            "parameter": "nitrogen_use_efficiency",
+            "effect": "good"
+          },
+          {
+            "parameter": "microbial_activity",
+            "effect": "favorable"
+          }
+        ]
+      }
+    },
+    {
+      "id": "AVAIL_005",
+      "if": {
+        "soil_ph": {
+          "gt": 7.0,
+          "lt": 7.5
+        }
+      },
+      "then": {
+        "nutrient_availability_effects": [
+          {
+            "parameter": "phosphorus",
+            "effect": "may_decline"
+          },
+          {
+            "parameter": "iron_zinc_manganese",
+            "effect": "declining_availability"
+          }
+        ]
+      }
+    },
+    {
+      "id": "AVAIL_006",
+      "if": {
+        "soil_ph": {
+          "gte": 7.5
+        }
+      },
+      "then": {
+        "nutrient_availability_effects": [
+          {
+            "parameter": "iron_zinc_manganese",
+            "effect": "high_deficiency_risk"
+          },
+          {
+            "parameter": "phosphorus",
+            "effect": "restricted_availability"
+          }
+        ]
+      }
+    }
+  ],
+  "integration_modifiers_for_npk_engine": [
+    {
+      "id": "MOD_001",
+      "if": {
+        "soil_ph": {
+          "lt": 5.5
+        }
+      },
+      "then": {
+        "phosphorus_effective_availability_multiplier": 0.75,
+        "nitrogen_use_efficiency_multiplier": 0.85,
+        "confidence_penalty": "high"
+      }
+    },
+    {
+      "id": "MOD_002",
+      "if": {
+        "soil_ph": {
+          "gte": 5.5,
+          "lt": 6.0
+        }
+      },
+      "then": {
+        "phosphorus_effective_availability_multiplier": 0.9,
+        "nitrogen_use_efficiency_multiplier": 0.95,
+        "confidence_penalty": "medium"
+      }
+    },
+    {
+      "id": "MOD_003",
+      "if": {
+        "soil_ph": {
+          "gte": 6.0,
+          "lte": 7.0
+        }
+      },
+      "then": {
+        "phosphorus_effective_availability_multiplier": 1.0,
+        "nitrogen_use_efficiency_multiplier": 1.0,
+        "confidence_penalty": "none"
+      }
+    },
+    {
+      "id": "MOD_004",
+      "if": {
+        "soil_ph": {
+          "gt": 7.5
+        }
+      },
+      "then": {
+        "phosphorus_effective_availability_multiplier": 0.9,
+        "confidence_penalty": "medium",
+        "micronutrient_watchlist": [
+          "iron",
+          "zinc",
+          "manganese"
+        ]
+      }
+    }
+  ],
+  "example_execution": [
+    {
+      "input": {
+        "crop": "cabbage",
+        "soil_ph": 4.8
+      },
+      "output_summary": {
+        "resolved_crop": "cabbage",
+        "ph_status": "severely_acidic",
+        "target_ph": 6.5,
+        "lime_trigger_ph": 6.2,
+        "liming_recommended": true,
+        "lime_requirement_test_needed": true
+      }
+    },
+    {
+      "input": {
+        "crop": "potato",
+        "soil_ph": 5.2,
+        "potato_scab_sensitive": true
+      },
+      "output_summary": {
+        "resolved_crop": "potato",
+        "ph_status": "strongly_acidic",
+        "target_ph": 5.2,
+        "lime_trigger_ph": 5.0,
+        "liming_recommended": false,
+        "lime_requirement_test_needed": false
+      }
+    },
+    {
+      "input": {
+        "crop": "tomato",
+        "soil_ph": 5.4
+      },
+      "output_summary": {
+        "resolved_crop": "tomato",
+        "ph_status": "strongly_acidic",
+        "target_ph": 6.5,
+        "lime_trigger_ph": 6.0,
+        "liming_recommended": true,
+        "lime_requirement_test_needed": false
+      }
+    }
+  ]
+}
