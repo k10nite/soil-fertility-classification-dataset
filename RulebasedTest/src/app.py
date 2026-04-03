@@ -148,73 +148,75 @@ try:
 
         if st.button("Calculate Prescription", type="primary"):
             # 1. SCALING: Multiply rates by actual land size (area_ha)
+            # base_n/p/k are the raw kg/ha from the JSON
             t_base_n, t_base_p, t_base_k = base_n * area_ha, base_p * area_ha, base_k * area_ha
             t_adj_n, t_adj_p, t_adj_k = adj_n_ha * area_ha, adj_p_ha * area_ha, adj_k_ha * area_ha
 
-            st.success(f"Results for {raw_area} {unit}")
-            
-            # 2. SOIL pH ASSESSMENT SECTION
-            st.subheader("Soil pH Assessment")
-            left, right = st.columns(2)
+            st.success(f"✅ Results for {raw_area} {unit}")
 
-            # Extracting values from ph_res (calculated before the button press)
+            # --- NEW SECTION: SCIENTIFIC BASIS ---
+            with st.expander("📊 View Nutrient Basis (Reference Rates)", expanded=False):
+                st.markdown(f"**Crop:** {selected_crop_label} | **Soil Status:** N:{n_lvl}, P:{p_lvl}, K:{k_lvl}")
+                st.write("These values represent the standard recommendation per hectare before land-size scaling or pH adjustment:")
+                
+                ref_col1, ref_col2, ref_col3 = st.columns(3)
+                ref_col1.metric("Target N", f"{base_n} kg/ha")
+                ref_col2.metric("Target P₂O₅", f"{base_p} kg/ha")
+                ref_col3.metric("Target K₂O", f"{base_k} kg/ha")
+                st.caption("Source: crop_npk_rules.json")
+
+            # --- SECTION 1: SOIL pH ASSESSMENT ---
+            st.subheader("1. Soil Condition Assessment")
+            ph_col1, ph_col2 = st.columns(2)
             ph_status = ph_res.get("ph_status", "N/A").replace("_", " ").title()
-            target_ph = ph_res.get("target_ph", "N/A")
-            lime_trigger_ph = ph_res.get("lime_trigger_ph", 6.0) # Default if missing
-            within_range = ph_res.get("within_target_range", soil_ph >= 6.0)
-            liming_needed = ph_res.get("liming_recommended", soil_ph < 5.5)
-            lime_test_needed = ph_res.get("lime_requirement_test_needed", soil_ph < 5.0)
-
-            with left:
-                status_key = ph_res.get("ph_status", "")
-                if "acidic" in status_key:
+            
+            with ph_col1:
+                if "acidic" in ph_status.lower():
                     st.error(f"Soil Status: {ph_status}")
-                elif "alkaline" in status_key:
-                    st.warning(f"Soil Status: {ph_status}")
                 else:
                     st.success(f"Soil Status: {ph_status}")
-                st.write(f"**Target pH:** {target_ph}")
-                st.write(f"**Lime Trigger pH:** {lime_trigger_ph}")
+                st.write(f"**Optimal pH Range:** 6.0 – 7.0")
 
-            with right:
-                st.metric("Within Target Range", "Yes" if within_range else "No")
-                st.metric("Liming Recommended", "Yes" if liming_needed else "No")
-                st.metric("Lime Requirement Test Needed", "Yes" if lime_test_needed else "No")
+            with ph_col2:
+                # Calculating efficiency based on your get_ph_modifiers function
+                mods = get_ph_modifiers(ph_res)
+                n_eff = mods['nitrogen_use_efficiency_multiplier'] * 100
+                p_eff = mods['phosphorus_effective_availability_multiplier'] * 100
+                st.write(f"**N Efficiency:** {n_eff}%")
+                st.write(f"**P Efficiency:** {p_eff}%")
 
-            # 3. WARNINGS AND IMPACTS
-            if ph_res.get("warnings"):
-                for warning in ph_res["warnings"]:
-                    st.warning(warning)
+            st.divider()
 
-            effects = ph_res.get("nutrient_availability_effects", [])
-            if effects:
-                st.markdown("### Nutrient Impact")
-                for effect in effects:
-                    parameter = effect["parameter"].replace("_", " ").title()
-                    impact = effect["effect"].replace("_", " ").title()
-                    st.info(f"{parameter}: {impact}")
-
-            st.divider() # Visual separator before NPK results
-
-            # 4. NPK SUMMARY TABLE
+            # --- SECTION 2: NUTRIENT REQUIREMENTS (TOTAL) ---
+            st.subheader("2. Calculated Requirements for your Land")
+            
             summary_df = pd.DataFrame([
-                {"Scenario": "Standard Need (kg)", "N": t_base_n, "P": t_base_p, "K": t_base_k},
-                {"Scenario": "pH-Adjusted Need (kg)", "N": t_adj_n, "P": t_adj_p, "K": t_adj_k}
-            ]).set_index("Scenario")
+                {
+                    "Analysis Step": "Theoretical Requirement (Standard)", 
+                    "N (kg)": t_base_n, "P (kg)": t_base_p, "K (kg)": t_base_k
+                },
+                {
+                    "Analysis Step": "Field-Adjusted (pH Corrected)", 
+                    "N (kg)": t_adj_n, "P (kg)": t_adj_p, "K (kg)": t_adj_k
+                }
+            ]).set_index("Analysis Step")
+            
             st.table(summary_df.style.format("{:.2f}"))
-
-            # 5. MIX COMPARISON
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("### Standard Mix")
+            
+            # --- SECTION 3: FERTILIZER MIXES ---
+            st.subheader("3. Fertilizer Application Options")
+            mix_col1, mix_col2 = st.columns(2)
+            
+            with mix_col1:
+                st.markdown("#### Standard Mix")
                 base_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules)
                 for res in base_results:
                     with st.expander(f"Using {res['Source']}"):
                         for line in res["Prescription"]: st.info(line)
                         st.metric("Total Weight", f"{res['Total Weight']:.2f} kg")
 
-            with col2:
-                st.markdown("### pH-Adjusted Mix")
+            with mix_col2:
+                st.markdown("#### pH-Adjusted Mix (Recommended)")
                 adj_results = solve_npk(t_adj_n, t_adj_p, t_adj_k, inventory, rules)
                 for res in adj_results:
                     with st.expander(f"Using {res['Source']}"):
