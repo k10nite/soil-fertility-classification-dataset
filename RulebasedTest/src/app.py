@@ -97,20 +97,55 @@ def adjust_targets_with_ph(t_n, t_p, t_k, ph_result):
 
 def solve_npk(t_n, t_p, t_k, inventory, rules):
     results = []
-    prec = rules["constraints"]["precision_decimals"]
+    # extracts contraint rukes from engine_rules.jason
+    precision = rules["constraints"]["precision_decimals"]  # specifaclly extract preison decimla point (2)
+    allow_over = rules["constraints"]["allow_over_fertilization"] # Extracts allow_over_fertilization - False,over fert is not allowed
+
+    # exrtacting fertilizer with Pure N, K and P Compound & Complete
     n_filler = next(f for f in inventory if f["n"] > 0 and f["p"] == 0 and f["k"] == 0)
     k_filler = next(f for f in inventory if f["k"] > 0 and f["n"] == 0 and f["p"] == 0)
-    for p_fert in [f for f in inventory if f["p"] > 0]:
-        qty_p = (t_p / p_fert["p"]) * 100 if p_fert["p"] > 0 else 0
-        n_prov = (qty_p * p_fert["n"]) / 100
-        k_prov = (qty_p * p_fert["k"]) / 100
-        qty_n = (max(0, t_n - n_prov) / n_filler["n"]) * 100
-        qty_k = (max(0, t_k - k_prov) / k_filler["k"]) * 100
+    p_sources = [f for f in inventory if f["p"] > 0] # Compund & Complete
+
+    #Solving Part (Core)
+    for p_fert in p_sources:
+        qty_p = (t_p / p_fert["p"]) * 100 if p_fert["p"] > 0 else 0  #Solving for Comound || Complete using p_sources
+
+        n_provided = (qty_p * p_fert["n"]) / 100
+        p_provided = (qty_p * p_fert["p"]) / 100
+        k_provided = (qty_p * p_fert["k"]) / 100
+
+        # Subtracting needed N & K
+        rem_n = t_n - n_provided 
+        rem_k = t_k - k_provided
+        
+        #To check whether is over fertilization or not
+        if not allow_over and (rem_n < -0.01 or rem_k < -0.01):
+            continue
+
+        #if no over fertilizer solve the remaining N &K
+        qty_n = (max(0, rem_n) / n_filler["n"]) * 100
+        qty_k = (max(0, rem_k) / k_filler["k"]) * 100
+
+        total_n = n_provided + ((qty_n * n_filler["n"]) / 100)
+        total_k = k_provided + ((qty_k * k_filler["k"]) / 100)
+
+        fmt = rules["output_format"]
         prescription = []
-        if qty_n > 0.01: prescription.append(f"{round(qty_n, prec)} kg of {n_filler['name']}")
-        if qty_p > 0.01: prescription.append(f"{round(qty_p, prec)} kg of {p_fert['name']}")
-        if qty_k > 0.01: prescription.append(f"{round(qty_k, prec)} kg of {k_filler['name']}")
-        results.append({"Source": p_fert["name"], "Prescription": prescription, "Total Weight": qty_n + qty_p + qty_k})
+        if qty_n > 0:
+            prescription.append(fmt.format(qty=round(qty_n, precision), fertilizer_name=n_filler["name"]))
+        prescription.append(fmt.format(qty=round(qty_p, precision), fertilizer_name=p_fert["name"]))
+        if qty_k > 0:
+            prescription.append(fmt.format(qty=round(qty_k, precision), fertilizer_name=k_filler["name"]))
+
+        results.append({
+            "Source": p_fert["name"],
+            "Prescription": prescription,
+            "Total Weight": qty_n + qty_p + qty_k,
+            "Applied N": total_n,
+            "Applied P": p_provided,
+            "Applied K": total_k,
+        })
+
     return sorted(results, key=lambda x: x["Total Weight"])[:rules["constraints"]["max_combinations"]]
 
 # --- MAIN UI ---

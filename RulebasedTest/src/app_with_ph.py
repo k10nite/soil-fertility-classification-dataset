@@ -238,26 +238,32 @@ def ph_multiplier_triggered(ph_result):
 
 def solve_npk(t_n, t_p, t_k, inventory, rules):
     results = []
-    precision = rules["constraints"]["precision_decimals"]
-    allow_over = rules["constraints"]["allow_over_fertilization"]
+    # extracts contraint rukes from engine_rules.jason
+    precision = rules["constraints"]["precision_decimals"]  # specifaclly extract preison decimla point (2)
+    allow_over = rules["constraints"]["allow_over_fertilization"] # Extracts allow_over_fertilization - False,over fert is not allowed
 
+    # exrtacting fertilizer with Pure N, K and P Compound & Complete
     n_filler = next(f for f in inventory if f["n"] > 0 and f["p"] == 0 and f["k"] == 0)
     k_filler = next(f for f in inventory if f["k"] > 0 and f["n"] == 0 and f["p"] == 0)
-    p_sources = [f for f in inventory if f["p"] > 0]
+    p_sources = [f for f in inventory if f["p"] > 0] # Compund & Complete
 
+    #Solving Part (Core)
     for p_fert in p_sources:
-        qty_p = (t_p / p_fert["p"]) * 100 if p_fert["p"] > 0 else 0
+        qty_p = (t_p / p_fert["p"]) * 100 if p_fert["p"] > 0 else 0  #Solving for Comound || Complete using p_sources
 
         n_provided = (qty_p * p_fert["n"]) / 100
         p_provided = (qty_p * p_fert["p"]) / 100
         k_provided = (qty_p * p_fert["k"]) / 100
 
-        rem_n = t_n - n_provided
+        # Subtracting needed N & K
+        rem_n = t_n - n_provided 
         rem_k = t_k - k_provided
-
+        
+        #To check whether is over fertilization or not
         if not allow_over and (rem_n < -0.01 or rem_k < -0.01):
             continue
 
+        #if no over fertilizer solve the remaining N &K
         qty_n = (max(0, rem_n) / n_filler["n"]) * 100
         qty_k = (max(0, rem_k) / k_filler["k"]) * 100
 
