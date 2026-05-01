@@ -23,6 +23,6 @@
       "max_combinations": 10,
       "precision_decimals": 2
     },
-    "output_format": "{qty}kg/ha of {fertilizer_name}"
+    "output_format": "{qty} kg/{area} {unit} of {fertilizer_name}"
   }
 }
