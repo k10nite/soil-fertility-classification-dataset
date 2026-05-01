@@ -95,7 +95,7 @@ def adjust_targets_with_ph(t_n, t_p, t_k, ph_result):
     ph_result["integration_modifiers"] = modifiers
     return adj_n, adj_p, float(t_k)
 
-def solve_npk(t_n, t_p, t_k, inventory, rules):
+def solve_npk(t_n, t_p, t_k, inventory, rules, area, unit_label):
     results = []
     # extracts contraint rukes from engine_rules.jason
     precision = rules["constraints"]["precision_decimals"]  # specifaclly extract preison decimla point (2)
@@ -132,10 +132,25 @@ def solve_npk(t_n, t_p, t_k, inventory, rules):
         fmt = rules["output_format"]
         prescription = []
         if qty_n > 0:
-            prescription.append(fmt.format(qty=round(qty_n, precision), fertilizer_name=n_filler["name"]))
-        prescription.append(fmt.format(qty=round(qty_p, precision), fertilizer_name=p_fert["name"]))
+            prescription.append(fmt.format(
+                qty=round(qty_n, precision), 
+                area=area, 
+                unit=unit_label, 
+                fertilizer_name=n_filler["name"]
+            ))
+        prescription.append(fmt.format(
+            qty=round(qty_p, precision), 
+            area=area, 
+            unit=unit_label, 
+            fertilizer_name=p_fert["name"]
+        ))
         if qty_k > 0:
-            prescription.append(fmt.format(qty=round(qty_k, precision), fertilizer_name=k_filler["name"]))
+            prescription.append(fmt.format(
+                qty=round(qty_k, precision), 
+                area=area, 
+                unit=unit_label, 
+                fertilizer_name=k_filler["name"]
+            ))
 
         results.append({
             "Source": p_fert["name"],
@@ -242,9 +257,11 @@ try:
             st.subheader("3. Fertilizer Application Options")
             mix_col1, mix_col2 = st.columns(2)
             
+            display_unit = "sqm" if "sqm" in unit else "ha"
+
             with mix_col1:
                 st.markdown("#### Standard Mix")
-                base_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules)
+                base_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules, raw_area, display_unit)
                 for res in base_results:
                     with st.expander(f"Using {res['Source']}"):
                         for line in res["Prescription"]: st.info(line)
@@ -252,7 +269,7 @@ try:
 
             with mix_col2:
                 st.markdown("#### pH-Adjusted Mix (Recommended)")
-                adj_results = solve_npk(t_adj_n, t_adj_p, t_adj_k, inventory, rules)
+                adj_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules, raw_area, display_unit)
                 for res in adj_results:
                     with st.expander(f"Using {res['Source']}"):
                         for line in res["Prescription"]: st.success(line)
