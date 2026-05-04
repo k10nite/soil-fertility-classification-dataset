@@ -108,73 +108,47 @@ def get_fertilizer_recommendation(crop_name, n_status, p_status, k_status, crop_
     return t_n, t_p, t_k
 
 def run_ph_engine(data, ph_rules):
-    """Evaluate the soil pH engine and return pH-related adjustment context.
+    """Evaluate the universal soil pH rule engine.
 
-    This function currently uses a simplified pH rule logic for the UI.
-    It prepares the rule input context and returns pH status, target pH, and any
-    warning/decision trace placeholders.
+    Applies the universal pH rule set from ph_rules.json. Rules are checked
+    in order and the first matching condition is applied. Returns pH status,
+    required action (liming/gypsum/none), and any borderline warnings.
+
+    Note: pH multipliers have been removed per agronomic standards
+    (BSU La Trinidad consultation). NPK targets are no longer adjusted by pH.
 
     Args:
-        data: A dictionary containing crop and soil_ph values.
+        data: A dictionary containing at least a soil_ph value.
         ph_rules: Loaded pH rule definitions from ph_rules.json.
 
     Returns:
-        dict: pH engine output including ph_status and target_ph.
+        dict: pH engine output including ph_status, ph_action, borderline_warning,
+              borderline_message, recommendation_message, perfect_ph, and soil_ph.
     """
-    filtered_data = {
-        "crop": data["crop"], "soil_ph": data["soil_ph"], "buffer_ph": None,
-        "lime_requirement_value": None, "potato_scab_sensitive": data.get("potato_scab_sensitive", None),
-        "legume_rotation_present": None,
-    }
-    context = dict(filtered_data)
-    context.update({"warnings": [], "actions": [], "decision_trace": []})
-    
-    # Simple mock-up of rule execution for brevity in this UI code
-    # In your real app, this calls run_rule_array which modifies context
-    context["ph_status"] = "acidic" if data["soil_ph"] < 6.0 else "optimal"
-    context["target_ph"] = 6.5
-    return context
+    soil_ph = data["soil_ph"]
+    constants = ph_rules.get("constants", {})
+    perfect_ph = constants.get("perfect_ph", 6.5)
+    liming_max = constants.get("liming_trigger_ph_max", 5.0)
+    gypsum_min = constants.get("gypsum_trigger_ph_min", 7.5)
+    borderline_low = constants.get("borderline_low_ph", 5.1)
+    borderline_high = constants.get("borderline_high_ph", 7.4)
 
-def get_ph_modifiers(ph_result):
-    """Select pH adjustment multipliers based on soil pH value.
+    # Evaluate rules in order: liming, borderline low, acceptable, borderline high, gypsum
+    if soil_ph <= liming_max:
+        matched_rule = next(r for r in ph_rules["ph_rules"] if r["id"] == "PH_001")
+    elif soil_ph == borderline_low:
+        matched_rule = next(r for r in ph_rules["ph_rules"] if r["id"] == "PH_002")
+    elif soil_ph >= gypsum_min:
+        matched_rule = next(r for r in ph_rules["ph_rules"] if r["id"] == "PH_005")
+    elif soil_ph == borderline_high:
+        matched_rule = next(r for r in ph_rules["ph_rules"] if r["id"] == "PH_004")
+    else:
+        matched_rule = next(r for r in ph_rules["ph_rules"] if r["id"] == "PH_003")
 
-    These modifiers adjust the effective availability of phosphorus and the
-    nitrogen use efficiency when the soil is acidic.
-
-    Args:
-        ph_result: A pH engine result dictionary containing soil_ph.
-
-    Returns:
-        dict: Multipliers for phosphorus availability and nitrogen efficiency.
-    """
-    soil_ph = ph_result.get("soil_ph", 0)
-    if soil_ph < 5.5: return {"phosphorus_effective_availability_multiplier": 0.75, "nitrogen_use_efficiency_multiplier": 0.85}
-    if 5.5 <= soil_ph < 6.0: return {"phosphorus_effective_availability_multiplier": 0.9, "nitrogen_use_efficiency_multiplier": 0.95}
-    return {"phosphorus_effective_availability_multiplier": 1.0, "nitrogen_use_efficiency_multiplier": 1.0}
-
-def adjust_targets_with_ph(t_n, t_p, t_k, ph_result):
-    """Apply pH-based multipliers to nutrient targets.
-
-    The method adjusts the raw N and P targets using pH modifiers, while K is
-    passed through unchanged. Adjusted targets are used for field-level
-    prescription calculations.
-
-    Args:
-        t_n: Base nitrogen target in kg/ha.
-        t_p: Base phosphorus target in kg/ha.
-        t_k: Base potassium target in kg/ha.
-        ph_result: Result from the pH engine, used to derive modifiers.
-
-    Returns:
-        tuple: Adjusted target rates (N, P, K) in kg/ha.
-    """
-    modifiers = get_ph_modifiers(ph_result)
-    p_m = modifiers.get("phosphorus_effective_availability_multiplier", 1.0)
-    n_m = modifiers.get("nitrogen_use_efficiency_multiplier", 1.0)
-    adj_n = round(float(t_n) / n_m, 2) if n_m > 0 else t_n
-    adj_p = round(float(t_p) / p_m, 2) if p_m > 0 else t_p
-    ph_result["integration_modifiers"] = modifiers
-    return adj_n, adj_p, float(t_k)
+    result = dict(matched_rule["then"])
+    result["soil_ph"] = soil_ph
+    result["perfect_ph"] = perfect_ph
+    return result
 
 
 def solve_npk(t_n, t_p, t_k, inventory, rules, area, unit_label):
@@ -287,57 +261,6 @@ def normalize_area(raw_area, area_unit):
     )
 
 
-def ph_adjusted_recommendation(crop_label, n_status, p_status, k_status, soil_ph, raw_area,
-                               area_unit="Square Meters (sqm)"):
-    """Calculate pH-adjusted nutrient targets and return recommended fertilizer list.
-
-    This method handles the entire pH adjustment workflow: loading assets, computing
-    base nutrient targets, running the pH engine, applying pH-based multipliers,
-    and generating fertilizer mix recommendations.
-
-    Args:
-        crop_label: User-facing crop label (e.g. "Cabbage").
-        n_status: Nitrogen status code.
-        p_status: Phosphorus status code.
-        k_status: Potassium status code.
-        soil_ph: Measured soil pH value.
-        raw_area: Numeric area from the user input.
-        area_unit: The area unit string, defaulting to square meters.
-
-    Returns:
-        list: Recommended fertilizer mixes sorted by total weight. Each item contains
-              Source, Prescription, Total Weight, Applied N/P/K.
-
-    Raises:
-        ValueError: If crop is not configured or unable to compute recommendation.
-    """
-    inventory, rules, crop_rules, ph_rules = load_assets()
-    selected_crop = THESIS_CROP_MAP.get(crop_label, crop_label)
-
-    if selected_crop not in crop_rules:
-        raise ValueError(f"Crop '{selected_crop}' is not configured in crop_npk_rules.json")
-
-    area_ha, unit_label = normalize_area(raw_area, area_unit)
-    
-    rec = get_fertilizer_recommendation(selected_crop, n_status, p_status, k_status, crop_rules)
-    if rec is None:
-        raise ValueError("Unable to compute fertilizer recommendation for the selected crop and soil status.")
-
-    base_n, base_p, base_k = rec
-    ph_res = run_ph_engine({"crop": selected_crop.lower(), "soil_ph": soil_ph}, ph_rules)
-    adj_n_ha, adj_p_ha, adj_k_ha = adjust_targets_with_ph(base_n, base_p, base_k, ph_res)
-
-    t_adj_n, t_adj_p, t_adj_k = adj_n_ha * area_ha, adj_p_ha * area_ha, adj_k_ha * area_ha
-
-    adjusted_mix = solve_npk(t_adj_n, t_adj_p, t_adj_k, inventory, rules, raw_area, unit_label)
-    
-    return {
-        "adjusted_targets_per_ha": {"N": adj_n_ha, "P": adj_p_ha, "K": adj_k_ha},
-        "total_adjusted": {"N": t_adj_n, "P": t_adj_p, "K": t_adj_k},
-        "ph_result": ph_res,
-        "adjusted_mix": adjusted_mix,
-    }
-
 
 def build_recommendation(crop_label, n_status, p_status, k_status, soil_ph, raw_area,
                          area_unit="Square Meters (sqm)", selected_inventory_names=None):
@@ -360,7 +283,7 @@ def build_recommendation(crop_label, n_status, p_status, k_status, soil_ph, raw_
     Returns:
         dict: Recommendation results including targets, mixes, pH output, and sufficiency state.
     """
-    inventory, rules, crop_rules, ph_rules = load_assets()
+    inventory, rules, crop_rules, _, ph_rules = load_assets()
     selected_crop = THESIS_CROP_MAP.get(crop_label, crop_label)
 
     if selected_crop not in crop_rules:
@@ -373,7 +296,7 @@ def build_recommendation(crop_label, n_status, p_status, k_status, soil_ph, raw_
         raise ValueError("Unable to compute fertilizer recommendation for the selected crop and soil status.")
 
     base_n, base_p, base_k = rec
-    ph_res = run_ph_engine({"crop": selected_crop.lower(), "soil_ph": soil_ph}, ph_rules)
+    ph_res = run_ph_engine({"soil_ph": soil_ph}, ph_rules)
 
     t_base_n, t_base_p, t_base_k = base_n * area_ha, base_p * area_ha, base_k * area_ha
 
@@ -419,7 +342,7 @@ def run_ui():
     st.title("🌱 Fertilizer Recommendation Engine")
 
     try:
-        inventory, rules, crop_rules, ph_rules = load_assets()
+        inventory, rules, crop_rules, _, ph_rules = load_assets()
 
         with st.sidebar:
             st.header("1. Land Information")
@@ -455,16 +378,14 @@ def run_ui():
         
         if rec:
             base_n, base_p, base_k = rec
-            ph_res = run_ph_engine({"crop": selected_crop_label.lower(), "soil_ph": soil_ph}, ph_rules)
-            adj_n_ha, adj_p_ha, adj_k_ha = adjust_targets_with_ph(base_n, base_p, base_k, ph_res)
+            ph_res = run_ph_engine({"soil_ph": soil_ph}, ph_rules)
 
             if st.button("Calculate Prescription", type="primary"):
                 # INITIALIZE USER INVENTORY FROM SELECTION
                 user_inventory = [f for f in inventory if f["name"] in user_selection]
 
-                # 1. SCALING
+                # 1. SCALING (no pH multipliers applied — targets are used as-is)
                 t_base_n, t_base_p, t_base_k = base_n * area_ha, base_p * area_ha, base_k * area_ha
-                t_adj_n, t_adj_p, t_adj_k = adj_n_ha * area_ha, adj_p_ha * area_ha, adj_k_ha * area_ha
 
                 st.success(f"✅ Results for {raw_area} {unit}")
 
@@ -479,22 +400,27 @@ def run_ui():
 
                 # --- SECTION 1: SOIL pH ASSESSMENT ---
                 st.subheader("1. Soil Condition Assessment")
-                ph_col1, ph_col2 = st.columns(2)
-                ph_status = ph_res.get("ph_status", "N/A").replace("_", " ").title()
-                
-                with ph_col1:
-                    if "acidic" in ph_status.lower():
-                        st.error(f"Soil Status: {ph_status}")
-                    else:
-                        st.success(f"Soil Status: {ph_status}")
-                    st.write(f"**Optimal pH Range:** 6.0 – 7.0")
+                ph_action = ph_res.get("ph_action", "none")
+                ph_status = ph_res.get("ph_status", "acceptable")
+                borderline_warning = ph_res.get("borderline_warning", False)
+                recommendation_message = ph_res.get("recommendation_message", "")
+                borderline_message = ph_res.get("borderline_message", None)
+                perfect_ph = ph_res.get("perfect_ph", 6.5)
 
-                with ph_col2:
-                    mods = get_ph_modifiers(ph_res)
-                    n_eff = mods['nitrogen_use_efficiency_multiplier'] * 100
-                    p_eff = mods['phosphorus_effective_availability_multiplier'] * 100
-                    st.write(f"**N Efficiency:** {n_eff}%")
-                    st.write(f"**P Efficiency:** {p_eff}%")
+                if ph_action == "liming_required":
+                    st.error(f"⚠️ **Soil pH: {soil_ph} — Liming Required**")
+                    st.write(recommendation_message)
+                elif ph_action == "gypsum_recommended":
+                    st.warning(f"⚠️ **Soil pH: {soil_ph} — Gypsum Recommended**")
+                    st.write(recommendation_message)
+                elif borderline_warning:
+                    st.warning(f"⚠️ **Soil pH: {soil_ph} — Borderline Warning**")
+                    st.write(borderline_message)
+                else:
+                    st.success(f"✅ **Soil pH: {soil_ph} — Within Acceptable Range**")
+                    st.write(recommendation_message)
+
+                st.write(f"**Ideal pH:** {perfect_ph} &nbsp;|&nbsp; **Acceptable Range:** 5.1 – 7.4")
 
                 st.divider()
                 st.subheader("Inventory Suitability Report")
@@ -507,24 +433,15 @@ def run_ui():
                 has_p = any(f["p"] > 0 for f in user_inventory)
                 has_k = any(f["k"] > 0 for f in user_inventory)
 
-                # GAP ANALYSIS: Specifically looking at Adjusted Targets (t_adj)
                 missing_nutrients = []
-                if t_adj_n > 0 and not has_n: missing_nutrients.append("Nitrogen (N)")
-                if t_adj_p > 0 and not has_p: missing_nutrients.append("Phosphorus (P)")
-                if t_adj_k > 0 and not has_k: missing_nutrients.append("Potassium (K)")
+                if t_base_n > 0 and not has_n: missing_nutrients.append("Nitrogen (N)")
+                if t_base_p > 0 and not has_p: missing_nutrients.append("Phosphorus (P)")
+                if t_base_k > 0 and not has_k: missing_nutrients.append("Potassium (K)")
 
                 if not missing_nutrients:
-                    st.info(f"✅ **Status: Just Right.** Your inventory can fulfill the **{raw_area} {unit}** adjusted requirements.")
+                    st.info(f"✅ **Status: Just Right.** Your inventory can fulfill the **{raw_area} {unit}** requirements.")
                 else:
                     st.warning(f"⚠️ **Status: Insufficient.** Missing: **{', '.join(missing_nutrients)}**.")
-                    
-                    # THE "WHY" - Explaining the Adjusted Requirement
-                    st.write(f"**Why this matters:** Because your soil pH is **{soil_ph}**, the {selected_crop_label} "
-                             f"requires a higher adjusted amount of nutrients to overcome soil locking. "
-                             f"Without a source of **{missing_nutrients[0]}**, you will not meet the target "
-                             f"yield for this land area.")
-                    
-                    # Recommendations based on what is missing
                     if "Nitrogen (N)" in missing_nutrients:
                         st.caption("💡 *Tip: Consider adding Urea (46-0-0) or Ammonium Sulfate.*")
                     if "Phosphorus (P)" in missing_nutrients:
@@ -535,12 +452,8 @@ def run_ui():
                 
                 summary_df = pd.DataFrame([
                     {
-                        "Analysis Step": "Theoretical Requirement (Standard)", 
+                        "Analysis Step": "Requirement for your Land", 
                         "N (kg)": t_base_n, "P (kg)": t_base_p, "K (kg)": t_base_k
-                    },
-                    {
-                        "Analysis Step": "Field-Adjusted (pH Corrected)", 
-                        "N (kg)": t_adj_n, "P (kg)": t_adj_p, "K (kg)": t_adj_k
                     }
                 ]).set_index("Analysis Step")
                 
@@ -548,25 +461,14 @@ def run_ui():
                 
                 # --- SECTION 3: FERTILIZER MIXES ---
                 st.subheader("3. Fertilizer Application Options")
-                mix_col1, mix_col2 = st.columns(2)
 
                 display_unit = "sqm" if "sqm" in unit else "ha"
                 
-                with mix_col1:
-                    st.markdown("#### Standard Mix")
-                    base_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules, raw_area, display_unit)
-                    for res in base_results:
-                        with st.expander(f"Using {res['Source']}"):
-                            for line in res["Prescription"]: st.info(line)
-                            st.metric("Total Weight", f"{res['Total Weight']:.2f} kg")
-
-                with mix_col2:
-                    st.markdown("#### pH-Adjusted Mix (Recommended)")
-                    adj_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules, raw_area, display_unit)
-                    for res in adj_results:
-                        with st.expander(f"Using {res['Source']}"):
-                            for line in res["Prescription"]: st.success(line)
-                            st.metric("Total Weight", f"{res['Total Weight']:.2f} kg")
+                base_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules, raw_area, display_unit)
+                for res in base_results:
+                    with st.expander(f"Using {res['Source']}"):
+                        for line in res["Prescription"]: st.info(line)
+                        st.metric("Total Weight", f"{res['Total Weight']:.2f} kg")
 
     except Exception as e:
         st.error(f"Configuration Error: {e}")
@@ -612,16 +514,14 @@ def run_ui_workaround():
         
         if rec:
             base_n, base_p, base_k = rec
-            ph_res = run_ph_engine({"crop": selected_crop_label.lower(), "soil_ph": soil_ph}, ph_rules)
-            adj_n_ha, adj_p_ha, adj_k_ha = adjust_targets_with_ph(base_n, base_p, base_k, ph_res)
+            ph_res = run_ph_engine({"soil_ph": soil_ph}, ph_rules)
 
             if st.button("Calculate Prescription", type="primary"):
                 # INITIALIZE USER INVENTORY FROM SELECTION
                 user_inventory = [f for f in inventory if f["name"] in user_selection]
 
-                # 1. SCALING
+                # 1. SCALING (no pH multipliers applied — targets are used as-is)
                 t_base_n, t_base_p, t_base_k = base_n * area_ha, base_p * area_ha, base_k * area_ha
-                t_adj_n, t_adj_p, t_adj_k = adj_n_ha * area_ha, adj_p_ha * area_ha, adj_k_ha * area_ha
 
                 st.success(f"✅ Results for {raw_area} {unit}")
 
@@ -636,22 +536,26 @@ def run_ui_workaround():
 
                 # --- SECTION 1: SOIL pH ASSESSMENT ---
                 st.subheader("1. Soil Condition Assessment")
-                ph_col1, ph_col2 = st.columns(2)
-                ph_status = ph_res.get("ph_status", "N/A").replace("_", " ").title()
-                
-                with ph_col1:
-                    if "acidic" in ph_status.lower():
-                        st.error(f"Soil Status: {ph_status}")
-                    else:
-                        st.success(f"Soil Status: {ph_status}")
-                    st.write(f"**Optimal pH Range:** 6.0 – 7.0")
+                ph_action = ph_res.get("ph_action", "none")
+                borderline_warning = ph_res.get("borderline_warning", False)
+                recommendation_message = ph_res.get("recommendation_message", "")
+                borderline_message = ph_res.get("borderline_message", None)
+                perfect_ph = ph_res.get("perfect_ph", 6.5)
 
-                with ph_col2:
-                    mods = get_ph_modifiers(ph_res)
-                    n_eff = mods['nitrogen_use_efficiency_multiplier'] * 100
-                    p_eff = mods['phosphorus_effective_availability_multiplier'] * 100
-                    st.write(f"**N Efficiency:** {n_eff}%")
-                    st.write(f"**P Efficiency:** {p_eff}%")
+                if ph_action == "liming_required":
+                    st.error(f"⚠️ **Soil pH: {soil_ph} — Liming Required**")
+                    st.write(recommendation_message)
+                elif ph_action == "gypsum_recommended":
+                    st.warning(f"⚠️ **Soil pH: {soil_ph} — Gypsum Recommended**")
+                    st.write(recommendation_message)
+                elif borderline_warning:
+                    st.warning(f"⚠️ **Soil pH: {soil_ph} — Borderline Warning**")
+                    st.write(borderline_message)
+                else:
+                    st.success(f"✅ **Soil pH: {soil_ph} — Within Acceptable Range**")
+                    st.write(recommendation_message)
+
+                st.write(f"**Ideal pH:** {perfect_ph} &nbsp;|&nbsp; **Acceptable Range:** 5.1 – 7.4")
 
                 st.divider()
                 st.subheader("Inventory Suitability Report")
@@ -664,24 +568,15 @@ def run_ui_workaround():
                 has_p = any(f["p"] > 0 for f in user_inventory)
                 has_k = any(f["k"] > 0 for f in user_inventory)
 
-                # GAP ANALYSIS: Specifically looking at Adjusted Targets (t_adj)
                 missing_nutrients = []
-                if t_adj_n > 0 and not has_n: missing_nutrients.append("Nitrogen (N)")
-                if t_adj_p > 0 and not has_p: missing_nutrients.append("Phosphorus (P)")
-                if t_adj_k > 0 and not has_k: missing_nutrients.append("Potassium (K)")
+                if t_base_n > 0 and not has_n: missing_nutrients.append("Nitrogen (N)")
+                if t_base_p > 0 and not has_p: missing_nutrients.append("Phosphorus (P)")
+                if t_base_k > 0 and not has_k: missing_nutrients.append("Potassium (K)")
 
                 if not missing_nutrients:
-                    st.info(f"✅ **Status: Just Right.** Your inventory can fulfill the **{raw_area} {unit}** adjusted requirements.")
+                    st.info(f"✅ **Status: Just Right.** Your inventory can fulfill the **{raw_area} {unit}** requirements.")
                 else:
                     st.warning(f"⚠️ **Status: Insufficient.** Missing: **{', '.join(missing_nutrients)}**.")
-                    
-                    # THE "WHY" - Explaining the Adjusted Requirement
-                    st.write(f"**Why this matters:** Because your soil pH is **{soil_ph}**, the {selected_crop_label} "
-                             f"requires a higher adjusted amount of nutrients to overcome soil locking. "
-                             f"Without a source of **{missing_nutrients[0]}**, you will not meet the target "
-                             f"yield for this land area.")
-                    
-                    # Recommendations based on what is missing
                     if "Nitrogen (N)" in missing_nutrients:
                         st.caption("💡 *Tip: Consider adding Urea (46-0-0) or Ammonium Sulfate.*")
                     if "Phosphorus (P)" in missing_nutrients:
@@ -692,12 +587,8 @@ def run_ui_workaround():
                 
                 summary_df = pd.DataFrame([
                     {
-                        "Analysis Step": "Theoretical Requirement (Standard)", 
+                        "Analysis Step": "Requirement for your Land", 
                         "N (kg)": t_base_n, "P (kg)": t_base_p, "K (kg)": t_base_k
-                    },
-                    {
-                        "Analysis Step": "Field-Adjusted (pH Corrected)", 
-                        "N (kg)": t_adj_n, "P (kg)": t_adj_p, "K (kg)": t_adj_k
                     }
                 ]).set_index("Analysis Step")
                 
@@ -705,25 +596,14 @@ def run_ui_workaround():
                 
                 # --- SECTION 3: FERTILIZER MIXES ---
                 st.subheader("3. Fertilizer Application Options")
-                mix_col1, mix_col2 = st.columns(2)
 
                 display_unit = "sqm" if "sqm" in unit else "ha"
                 
-                with mix_col1:
-                    st.markdown("#### Standard Mix")
-                    base_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules, raw_area, display_unit)
-                    for res in base_results:
-                        with st.expander(f"Using {res['Source']}"):
-                            for line in res["Prescription"]: st.info(line)
-                            st.metric("Total Weight", f"{res['Total Weight']:.2f} kg")
-
-                with mix_col2:
-                    st.markdown("#### pH-Adjusted Mix (Recommended)")
-                    adj_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules, raw_area, display_unit)
-                    for res in adj_results:
-                        with st.expander(f"Using {res['Source']}"):
-                            for line in res["Prescription"]: st.success(line)
-                            st.metric("Total Weight", f"{res['Total Weight']:.2f} kg")
+                base_results = solve_npk(t_base_n, t_base_p, t_base_k, inventory, rules, raw_area, display_unit)
+                for res in base_results:
+                    with st.expander(f"Using {res['Source']}"):
+                        for line in res["Prescription"]: st.info(line)
+                        st.metric("Total Weight", f"{res['Total Weight']:.2f} kg")
 
     except Exception as e:
         st.error(f"Configuration Error: {e}")
