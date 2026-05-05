@@ -237,6 +237,124 @@ def solve_npk(t_n, t_p, t_k, inventory, rules, area, unit_label):
     return sorted(results, key=lambda x: x["Total Weight"])[:rules["constraints"]["max_combinations"]]
 
 
+def check_fertilzer_input(t_base_n, t_base_p, t_base_k, selected_inventory_names):
+    """Validate selected fertilizer inventory against required NPK totals.
+
+    Args:
+        t_base_n: Total nitrogen requirement for the target area.
+        t_base_p: Total phosphorus requirement for the target area.
+        t_base_k: Total potassium requirement for the target area.
+        selected_inventory_names: List of fertilizer names selected by the user.
+
+    Returns:
+        dict: A result object with a boolean 'valid', a text 'reason', and
+              optional 'details' when the selection can satisfy requirements.
+    """
+    inventory, rules, _, _, _ = load_assets()
+    selected_inventory_names = selected_inventory_names or []
+
+    if not selected_inventory_names:
+        return {
+            "valid": False,
+            "reason": "No fertilizers selected.",
+            "details": None,
+        }
+
+    available_names = [f["name"] for f in inventory]
+    invalid_names = [name for name in selected_inventory_names if name not in available_names]
+    if invalid_names:
+        return {
+            "valid": False,
+            "reason": f"Unknown fertilizer name(s): {', '.join(invalid_names)}.",
+            "details": None,
+        }
+
+    selected_inventory = [f for f in inventory if f["name"] in selected_inventory_names]
+    if not selected_inventory:
+        return {
+            "valid": False,
+            "reason": "Selected fertilizer names did not match any available inventory items.",
+            "details": None,
+        }
+
+    has_n = any(f["n"] > 0 for f in selected_inventory)
+    has_p = any(f["p"] > 0 for f in selected_inventory)
+    has_k = any(f["k"] > 0 for f in selected_inventory)
+    missing = []
+    if t_base_n > 0 and not has_n:
+        missing.append("Nitrogen (N)")
+    if t_base_p > 0 and not has_p:
+        missing.append("Phosphorus (P)")
+    if t_base_k > 0 and not has_k:
+        missing.append("Potassium (K)")
+    if missing:
+        return {
+            "valid": False,
+            "reason": f"Selected inventory cannot supply: {', '.join(missing)}.",
+            "details": None,
+        }
+
+    try:
+        candidate_mix = solve_npk(t_base_n, t_base_p, t_base_k, selected_inventory, rules, area=1.0, unit_label="ha")
+    except StopIteration:
+        return {
+            "valid": False,
+            "reason": "Selected inventory lacks required pure N/K fillers or valid P-source fertilizers.",
+            "details": None,
+        }
+    except Exception as exc:
+        return {
+            "valid": False,
+            "reason": f"Unable to evaluate selected fertilizers: {exc}",
+            "details": None,
+        }
+
+    if not candidate_mix:
+        return {
+            "valid": False,
+            "reason": "No valid fertilizer mix could be created from the selected inventory.",
+            "details": None,
+        }
+
+    best = candidate_mix[0]
+    enough_n = best["Applied N"] >= t_base_n - 0.01
+    enough_p = best["Applied P"] >= t_base_p - 0.01
+    enough_k = best["Applied K"] >= t_base_k - 0.01
+    if not (enough_n and enough_p and enough_k):
+        missing = []
+        if not enough_n:
+            missing.append("Nitrogen")
+        if not enough_p:
+            missing.append("Phosphorus")
+        if not enough_k:
+            missing.append("Potassium")
+        return {
+            "valid": False,
+            "reason": f"Selected inventory cannot fully satisfy: {', '.join(missing)}.",
+            "details": {
+                "candidate_prescription": best["Prescription"],
+                "applied": {
+                    "N": round(best["Applied N"], 2),
+                    "P": round(best["Applied P"], 2),
+                    "K": round(best["Applied K"], 2),
+                },
+            },
+        }
+
+    return {
+        "valid": True,
+        "reason": "Selected inventory can satisfy the required NPK values.",
+        "details": {
+            "needed_kg_per_ha": round(best["Total Weight"], 2),
+            "source": best["Source"],
+            "applied": {
+                "N": round(best["Applied N"], 2),
+                "P": round(best["Applied P"], 2),
+                "K": round(best["Applied K"], 2),
+            },
+            "prescription": best["Prescription"],
+        },
+    }
 def normalize_area(raw_area, area_unit):
     """Convert user area input into hectares and derive display unit label.
 
@@ -259,6 +377,8 @@ def normalize_area(raw_area, area_unit):
     raise ValueError(
         f"Unsupported area_unit '{area_unit}'. Use 'sqm' or 'ha', or values like 'Square Meters (sqm)' or 'Hectares (ha)'."
     )
+
+
 
 
 
@@ -301,6 +421,7 @@ def build_recommendation(crop_label, n_status, p_status, k_status, soil_ph, raw_
     t_base_n, t_base_p, t_base_k = base_n * area_ha, base_p * area_ha, base_k * area_ha
 
     selected_inventory_names = selected_inventory_names or []
+    inventory_check = check_fertilzer_input(t_base_n, t_base_p, t_base_k, selected_inventory_names)
     user_inventory = [f for f in inventory if f["name"] in selected_inventory_names]
 
     has_n = any(f["n"] > 0 for f in user_inventory)
@@ -327,6 +448,7 @@ def build_recommendation(crop_label, n_status, p_status, k_status, soil_ph, raw_
         "total_base": {"N": t_base_n, "P": t_base_p, "K": t_base_k},
         "ph_result": ph_res,
         "user_inventory": user_inventory,
+        "inventory_check": inventory_check,
         "inventory_sufficiency": {
             "has_n": has_n,
             "has_p": has_p,
@@ -335,7 +457,6 @@ def build_recommendation(crop_label, n_status, p_status, k_status, soil_ph, raw_
         },
         "standard_mix": base_mix,
     }
-
 
 def run_ui():
     st.set_page_config(page_title="Rule-Based NPK + pH", layout="centered")
@@ -609,7 +730,7 @@ def run_ui_workaround():
         st.error(f"Configuration Error: {e}")
         
 def main():
-    run_ui_workaround()  
+    run_ui()  
 
 if __name__ == "__main__":
-    run_ui_workaround()
+    run_ui()

@@ -1,207 +1,699 @@
 {
     "Ampalaya": {
-        "N": {"Low": 90.0, "Medium": 50.0, "High": 35.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 50.0,
+            "High": 40.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Batao": {
-        "N": {"Low": 45.0, "Medium": 40.0, "High": 32.5},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 45.0,
+            "Medium": 40.0,
+            "High": 35.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "String Beans": {
-        "N": {"Low": 50.0, "Medium": 40.0, "High": 32.5},
-        "P": {"Low": 90.0, "Medium": 45.0, "High": 10.0},
-        "K": {"Low": 50.0, "Medium": 40.0, "High": 15.0}
+        "N": {
+            "Low": 50.0,
+            "Medium": 40.0,
+            "High": 35.0
+        },
+        "P": {
+            "Low": 90.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 50.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Baguio Beans": {
-        "N": {"Low": 45.0, "Medium": 40.0, "High": 32.5},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 45.0,
+            "Medium": 40.0,
+            "High": 35.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Lima (Patani)": {
-        "N": {"Low": 45.0, "Medium": 40.0, "High": 32.5},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 45.0,
+            "Medium": 40.0,
+            "High": 35.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Winged Beans": {
-        "N": {"Low": 45.0, "Medium": 40.0, "High": 32.5},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 45.0,
+            "Medium": 40.0,
+            "High": 35.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Seguidillas": {
-        "N": {"Low": 40.0, "Medium": 30.0, "High": 10.0},
-        "P": {"Low": 40.0, "Medium": 25.0, "High": 5.0},
-        "K": {"Low": 45.0, "Medium": 30.0, "High": 15.0}
+        "N": {
+            "Low": 40.0,
+            "Medium": 30.0,
+            "High": 20.0
+        },
+        "P": {
+            "Low": 40.0,
+            "Medium": 30.0,
+            "High": 10.0
+        },
+        "K": {
+            "Low": 45.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Dwarf Beans": {
-        "N": {"Low": 60.0, "Medium": 40.0, "High": 15.0},
-        "P": {"Low": 30.0, "Medium": 20.0, "High": 5.0},
-        "K": {"Low": 45.0, "Medium": 30.0, "High": 15.0}
+        "N": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 30.0
+        },
+        "P": {
+            "Low": 30.0,
+            "Medium": 20.0,
+            "High": 10.0
+        },
+        "K": {
+            "Low": 45.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Chayote": {
-        "N": {"Low": 60.0, "Medium": 50.0, "High": 35.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 60.0,
+            "Medium": 50.0,
+            "High": 40.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Cucumber": {
-        "N": {"Low": 100.0, "Medium": 80.0, "High": 45.0},
-        "P": {"Low": 100.0, "Medium": 62.5, "High": 15.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 100.0,
+            "Medium": 80.0,
+            "High": 60.0
+        },
+        "P": {
+            "Low": 100.0,
+            "Medium": 75.0,
+            "High": 30.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Parsnip": {
-        "N": {"Low": 90.0, "Medium": 60.0, "High": 37.5},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 60.0,
+            "High": 45.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Patani": {
-        "N": {"Low": 45.0, "Medium": 40.0, "High": 32.5},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 45.0,
+            "Medium": 40.0,
+            "High": 35.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Patola": {
-        "N": {"Low": 90.0, "Medium": 60.0, "High": 30.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 60.0,
+            "High": 30.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Peas": {
-        "N": {"Low": 20.0, "Medium": 10.0, "High": 0.0},
-        "P": {"Low": 40.0, "Medium": 35.0, "High": 5.0},
-        "K": {"Low": 45.0, "Medium": 30.0, "High": 15.0}
+        "N": {
+            "Low": 20.0,
+            "Medium": 10.0,
+            "High": 0.0
+        },
+        "P": {
+            "Low": 40.0,
+            "Medium": 40.0,
+            "High": 10.0
+        },
+        "K": {
+            "Low": 45.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Carrot": {
-        "N": {"Low": 90.0, "Medium": 80.0, "High": 65.0},
-        "P": {"Low": 90.0, "Medium": 60.0, "High": 15.0},
-        "K": {"Low": 120.0, "Medium": 75.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 80.0,
+            "High": 70.0
+        },
+        "P": {
+            "Low": 90.0,
+            "Medium": 70.0,
+            "High": 30.0
+        },
+        "K": {
+            "Low": 120.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Garlic": {
-        "N": {"Low": 90.0, "Medium": 60.0, "High": 15.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 150.0, "Medium": 120.0, "High": 45.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 60.0,
+            "High": 30.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 150.0,
+            "Medium": 90.0,
+            "High": 45.0
+        }
     },
     "Onion": {
-        "N": {"Low": 90.0, "Medium": 60.0, "High": 15.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 150.0, "Medium": 120.0, "High": 45.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 60.0,
+            "High": 30.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 150.0,
+            "Medium": 90.0,
+            "High": 45.0
+        }
     },
     "Ginger (Local)": {
-        "N": {"Low": 40.0, "Medium": 30.0, "High": 10.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 120.0, "Medium": 75.0, "High": 15.0}
+        "N": {
+            "Low": 40.0,
+            "Medium": 30.0,
+            "High": 20.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 120.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Ginger (Improved)": {
-        "N": {"Low": 80.0, "Medium": 70.0, "High": 60.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 120.0, "Medium": 75.0, "High": 15.0}
+        "N": {
+            "Low": 80.0,
+            "Medium": 70.0,
+            "High": 60.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 120.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Potato": {
-        "N": {"Low": 80.0, "Medium": 70.0, "High": 50.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 90.0, "Medium": 60.0, "High": 15.0}
+        "N": {
+            "Low": 80.0,
+            "Medium": 70.0,
+            "High": 60.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 90.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Radish/Turnips": {
-        "N": {"Low": 90.0, "Medium": 80.0, "High": 65.0},
-        "P": {"Low": 90.0, "Medium": 60.0, "High": 15.0},
-        "K": {"Low": 120.0, "Medium": 75.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 80.0,
+            "High": 70.0
+        },
+        "P": {
+            "Low": 90.0,
+            "Medium": 70.0,
+            "High": 30.0
+        },
+        "K": {
+            "Low": 120.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Asparagus": {
-        "N": {"Low": 90.0, "Medium": 60.0, "High": 37.5},
-        "P": {"Low": 40.0, "Medium": 25.0, "High": 5.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 60.0,
+            "High": 45.0
+        },
+        "P": {
+            "Low": 40.0,
+            "Medium": 30.0,
+            "High": 10.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Broccoli": {
-        "N": {"Low": 60.0, "Medium": 50.0, "High": 35.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 60.0,
+            "Medium": 50.0,
+            "High": 40.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Cabbage": {
-        "N": {"Low": 150.0, "Medium": 140.0, "High": 110.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 75.0, "Medium": 60.0, "High": 15.0}
+        "N": {
+            "Low": 150.0,
+            "Medium": 140.0,
+            "High": 120.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 75.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Cauliflower": {
-        "N": {"Low": 150.0, "Medium": 140.0, "High": 110.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 150.0,
+            "Medium": 140.0,
+            "High": 120.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Cabbage (Head)": {
-        "N": {"Low": 150.0, "Medium": 140.0, "High": 110.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 150.0,
+            "Medium": 140.0,
+            "High": 120.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Lettuce": {
-        "N": {"Low": 150.0, "Medium": 140.0, "High": 110.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 150.0,
+            "Medium": 140.0,
+            "High": 120.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Mustard": {
-        "N": {"Low": 150.0, "Medium": 140.0, "High": 110.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 75.0, "Medium": 60.0, "High": 15.0}
+        "N": {
+            "Low": 150.0,
+            "Medium": 140.0,
+            "High": 120.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 75.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Pechay": {
-        "N": {"Low": 150.0, "Medium": 140.0, "High": 110.0},
-        "P": {"Low": 60.0, "Medium": 35.0, "High": 10.0},
-        "K": {"Low": 75.0, "Medium": 60.0, "High": 15.0}
+        "N": {
+            "Low": 150.0,
+            "Medium": 140.0,
+            "High": 120.0
+        },
+        "P": {
+            "Low": 60.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 75.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Celery": {
-        "N": {"Low": 60.0, "Medium": 50.0, "High": 35.0},
-        "P": {"Low": 90.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 60.0,
+            "Medium": 50.0,
+            "High": 40.0
+        },
+        "P": {
+            "Low": 90.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Bell Pepper": {
-        "N": {"Low": 90.0, "Medium": 80.0, "High": 65.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 150.0, "Medium": 75.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 80.0,
+            "High": 70.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 150.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Green (siling-haba) Pepper": {
-        "N": {"Low": 120.0, "Medium": 90.0, "High": 45.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 150.0, "Medium": 120.0, "High": 60.0}
+        "N": {
+            "Low": 120.0,
+            "Medium": 90.0,
+            "High": 60.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 150.0,
+            "Medium": 90.0,
+            "High": 30.0
+        }
     },
     "Pepper": {
-        "N": {"Low": 90.0, "Medium": 60.0, "High": 15.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 150.0, "Medium": 120.0, "High": 60.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 60.0,
+            "High": 30.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 150.0,
+            "Medium": 90.0,
+            "High": 30.0
+        }
     },
     "Black Pepper": {
-        "N": {"Low": 0.04, "Medium": 0.02, "High": 0.005},
-        "P": {"Low": 0.04, "Medium": 0.025, "High": 0.005},
-        "K": {"Low": 0.03, "Medium": 0.02, "High": 0.005}
+        "N": {
+            "Low": 0.04,
+            "Medium": 0.02,
+            "High": 0.01
+        },
+        "P": {
+            "Low": 0.04,
+            "Medium": 0.03,
+            "High": 0.01
+        },
+        "K": {
+            "Low": 0.03,
+            "Medium": 0.01,
+            "High": 0.0
+        }
     },
     "Eggplant": {
-        "N": {"Low": 90.0, "Medium": 80.0, "High": 65.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 90.0, "Medium": 60.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 80.0,
+            "High": 70.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 90.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Okra (Local)": {
-        "N": {"Low": 90.0, "Medium": 80.0, "High": 70.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 90.0, "Medium": 60.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 80.0,
+            "High": 80.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 90.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Oka (Hybrid)": {
-        "N": {"Low": 120.0, "Medium": 100.0, "High": 65.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 10.0},
-        "K": {"Low": 90.0, "Medium": 60.0, "High": 15.0}
+        "N": {
+            "Low": 120.0,
+            "Medium": 100.0,
+            "High": 70.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 20.0
+        },
+        "K": {
+            "Low": 90.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "tomatoes": {
-        "N": {"Low": 90.0, "Medium": 80.0, "High": 65.0},
-        "P": {"Low": 120.0, "Medium": 75.0, "High": 15.0},
-        "K": {"Low": 90.0, "Medium": 60.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 80.0,
+            "High": 70.0
+        },
+        "P": {
+            "Low": 120.0,
+            "Medium": 90.0,
+            "High": 30.0
+        },
+        "K": {
+            "Low": 90.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "SQUASH": {
-        "N": {"Low": 90.0, "Medium": 50.0, "High": 35.0},
-        "P": {"Low": 80.0, "Medium": 50.0, "High": 15.0},
-        "K": {"Low": 60.0, "Medium": 45.0, "High": 15.0}
+        "N": {
+            "Low": 90.0,
+            "Medium": 50.0,
+            "High": 40.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 60.0,
+            "High": 30.0
+        },
+        "K": {
+            "Low": 60.0,
+            "Medium": 30.0,
+            "High": 0.0
+        }
     },
     "Basil": {
-        "N": {"Low": 0.001, "Medium": 0.0, "High": 0.0},
-        "P": {"Low": 0.001, "Medium": 0.0, "High": 0.0},
-        "K": {"Low": 0.001, "Medium": 0.0, "High": 0.0}
+        "N": {
+            "Low": 0.001,
+            "Medium": 0.0,
+            "High": 0.0
+        },
+        "P": {
+            "Low": 0.001,
+            "Medium": 0.0,
+            "High": 0.0
+        },
+        "K": {
+            "Low": 0.001,
+            "Medium": 0.0,
+            "High": 0.0
+        }
     },
     "Mint herb": {
-        "N": {"Low": 80.0, "Medium": 40.0, "High": 10.0},
-        "P": {"Low": 80.0, "Medium": 30.0, "High": 0.0},
-        "K": {"Low": 20.0, "Medium": 10.0, "High": 2.5}
+        "N": {
+            "Low": 80.0,
+            "Medium": 40.0,
+            "High": 20.0
+        },
+        "P": {
+            "Low": 80.0,
+            "Medium": 40.0,
+            "High": 0.0
+        },
+        "K": {
+            "Low": 20.0,
+            "Medium": 5.0,
+            "High": 0.0
+        }
     }
 }
